@@ -1,8 +1,20 @@
-﻿@page "/"
-
-@using OpenHabitTracker.Data
+@page "/"
+@using OpenHabitTracker.App
+@using OpenHabitTracker.Query
+@inject ClientState ClientState
+@inject IStringLocalizer Loc
 
 <PageTitle>OpenHabitTracker</PageTitle>
+<section class="app-dashboard" aria-label="@Loc["Your overview"]">
+    <span class="app-dashboard-label"><i class="bi bi-grid-1x2" aria-hidden="true"></i> @Loc["Your overview"]</span>
+    <h1 class="app-dashboard-title">@Loc["Your overview"]</h1>
+    <div class="app-kpis">
+        <NavLink class="app-kpi" href="tasks"><i class="bi bi-list-check" aria-hidden="true"></i><strong>@OpenTaskCount</strong><span>@Loc["Open tasks"]</span></NavLink>
+        <NavLink class="app-kpi app-kpi-danger" href="tasks"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><strong>@OverdueTaskCount</strong><span>@Loc["Overdue tasks"]</span></NavLink>
+        <NavLink class="app-kpi" href="habits"><i class="bi bi-repeat" aria-hidden="true"></i><strong>@RecurringCount</strong><span>@Loc["Recurring tasks"]</span></NavLink>
+        <NavLink class="app-kpi" href="notes"><i class="bi bi-sticky" aria-hidden="true"></i><strong>@NoteCount</strong><span>@Loc["Notes ready"]</span></NavLink>
+    </div>
+</section>
 
 <Notes IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
 <Tasks IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
@@ -10,6 +22,18 @@
 
 @code {
     bool _isCollapsedChanged;
+    int OpenTaskCount => ClientState.Tasks?.Values.Count(t => !t.IsDeleted && t.CompletedAt is null) ?? 0;
+    int OverdueTaskCount => ClientState.Tasks?.Values.Count(t => !t.IsDeleted && UrgencyOrder.GetTaskBucket(t, DateTime.Now) == UrgencyOrder.TaskBucket.Overdue) ?? 0;
+    int RecurringCount => ClientState.Habits?.Values.Count(h => !h.IsDeleted) ?? 0;
+    int NoteCount => ClientState.Notes?.Values.Count(n => !n.IsDeleted) ?? 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ClientState.LoadCategories();
+        await ClientState.LoadNotes();
+        await ClientState.LoadTasks();
+        await ClientState.LoadHabits();
+    }
 
     void OnIsCollapsedChanged() => _isCollapsedChanged = !_isCollapsedChanged;
 }
