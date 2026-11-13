@@ -15,6 +15,7 @@
 @inject ITaskService TaskService
 @inject ICategoryService CategoryService
 @inject ClientState ClientState
+@inject ContentClipboard ContentClipboard
 @inject ISearchFilterService SearchFilterService
 @inject IStringLocalizer Loc
 @inject IPriorityService PriorityService
@@ -27,6 +28,7 @@
 
     @if (TaskService.NewTask is null)
     {
+        <button class="btn btn-outline-secondary app-paste-button my-1" aria-label="@Loc["Paste"]" title="@Loc["Paste"]" disabled="@(!ContentClipboard.CanPasteTask(ClientState.User.Id, ClientState.DataLocation))" @onclick="PasteCopied"><i class="bi bi-clipboard-plus" aria-hidden="true"></i><span class="d-none d-sm-inline ms-1">@Loc["Paste"]</span></button>
         <button class="btn btn-plain input-group d-flex flex-nowrap my-1 p-0" @onclick="AddNew">
             <span class="input-group-text fw-bold text-primary flex-grow-1">@Loc["Add new task"]</span>
 
@@ -123,7 +125,7 @@
                 <div class="@($"my-{ClientState.Settings.VerticalMargin}")">
                     @if (!_showSecondColumn && task.Id == Id && TaskService.NewTask is null)
                     {
-                        <TaskComponent Task="task" CloseSelected="CloseSelected" />
+                        <TaskComponent Task="task" CloseSelected="CloseSelected" Copied="OnCopied" />
                     }
                     else
                     {
@@ -175,7 +177,7 @@
     <div class="col child-column px-0 px-md-1 py-1">
         @if (_showTaskComponent)
         {
-            <TaskComponent Task="TaskService.SelectedTask" CloseSelected="CloseSelected" />
+            <TaskComponent Task="TaskService.SelectedTask" CloseSelected="CloseSelected" Copied="OnCopied" />
         }
         else if (TaskService.Tasks is not null)
         {
@@ -343,6 +345,15 @@
         await TaskService.MarkAsDone(task);
         _pageStateChanged = !_pageStateChanged;
     }
+
+
+    void PasteCopied()
+    {
+        TaskService.NewTask = ContentClipboard.PasteTask(ClientState.User.Id, ClientState.DataLocation);
+        shouldFocus = TaskService.NewTask is not null;
+    }
+
+    void OnCopied() => StateHasChanged();
 
     void AddNew()
     {

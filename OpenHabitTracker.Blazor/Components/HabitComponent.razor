@@ -10,6 +10,8 @@
 @inject IHabitService HabitService
 @inject IJsInterop JsInterop
 @inject ClientState ClientState
+@inject ContentClipboard ContentClipboard
+@inject IItemService ItemService
 @inject IStringLocalizer Loc
 @inject IGTourService GTourService
 
@@ -26,6 +28,7 @@
         {
             <button class="btn btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="OnMarkAsDoneClicked" data-habits-step-9><i class="bi bi-check-square"></i></button>
         }
+        <button class="btn btn-outline-secondary" aria-label="@Loc["Copy"]" title="@Loc["Copy"]" @onclick="CopyToClipboard"><i class="bi bi-files" aria-hidden="true"></i></button>
         <button class="btn btn-outline-primary" aria-label="@Loc["Delete"]" @onclick="async () => { await HabitService.DeleteHabit(Habit); await CloseSelected.InvokeAsync(); await ContentDeleted.InvokeAsync(); }" data-habits-step-10><i class="bi bi-trash"></i></button>
     </div>
 
@@ -231,6 +234,14 @@
 }
 
 @code {
+    async Task CopyToClipboard()
+    {
+        // Also capture lazily loaded checklist items before taking the snapshot.
+        await ItemService.Initialize(Habit);
+        ContentClipboard.CopyHabit(Habit, ClientState.User.Id, ClientState.DataLocation);
+        await Copied.InvokeAsync();
+    }
+
     TourStep[] tourSteps =
     {
     };
@@ -249,6 +260,9 @@
 
     [Parameter]
     public EventCallback CloseSelected { get; set; }
+
+    [Parameter]
+    public EventCallback Copied { get; set; }
 
     [CascadingParameter(Name = "ContentDeleted")]
     public EventCallback ContentDeleted { get; set; }

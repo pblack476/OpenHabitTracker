@@ -14,6 +14,7 @@
 @inject IHabitService HabitService
 @inject ICategoryService CategoryService
 @inject ClientState ClientState
+@inject ContentClipboard ContentClipboard
 @inject IJsInterop JsInterop
 @inject ISearchFilterService SearchFilterService
 @inject IStringLocalizer Loc
@@ -26,6 +27,7 @@
 
     @if (HabitService.NewHabit is null)
     {
+        <button class="btn btn-outline-secondary app-paste-button my-1" aria-label="@Loc["Paste"]" title="@Loc["Paste"]" disabled="@(!ContentClipboard.CanPasteHabit(ClientState.User.Id, ClientState.DataLocation))" @onclick="PasteCopied"><i class="bi bi-clipboard-plus" aria-hidden="true"></i><span class="d-none d-sm-inline ms-1">@Loc["Paste"]</span></button>
         <button class="btn btn-plain input-group d-flex flex-nowrap my-1 p-0" @onclick="AddNew">
             <span class="input-group-text fw-bold text-primary flex-grow-1">@Loc["Add new habit"]</span>
 
@@ -171,7 +173,7 @@
                 <div class="@($"my-{ClientState.Settings.VerticalMargin} {(showHabitComponent ? "" : "d-flex")}")">
                     @if (showHabitComponent)
                     {
-                        <HabitComponent Habit="habit" CloseSelected="CloseSelected" />
+                        <HabitComponent Habit="habit" CloseSelected="CloseSelected" Copied="OnCopied" />
                     }
                     else
                     {
@@ -252,7 +254,7 @@
     <div class="col child-column px-0 px-md-1 py-1">
         @if (_showHabitComponent)
         {
-            <HabitComponent Habit="HabitService.SelectedHabit" HabitChanged="OnHabitChanged" CloseSelected="CloseSelected" />
+            <HabitComponent Habit="HabitService.SelectedHabit" HabitChanged="OnHabitChanged" CloseSelected="CloseSelected" Copied="OnCopied" />
         }
         else if (HabitService.Habits is not null)
         {
@@ -411,6 +413,15 @@
             await JsInterop.FocusElementById($"habit-item-{_lastSelectedId}");
         }
     }
+
+
+    void PasteCopied()
+    {
+        HabitService.NewHabit = ContentClipboard.PasteHabit(ClientState.User.Id, ClientState.DataLocation);
+        shouldFocus = HabitService.NewHabit is not null;
+    }
+
+    void OnCopied() => StateHasChanged();
 
     void AddNew()
     {

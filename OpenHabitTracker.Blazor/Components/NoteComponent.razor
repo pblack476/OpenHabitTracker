@@ -6,6 +6,7 @@
 @inject INoteService NoteService
 @inject IJsInterop JsInterop
 @inject ClientState ClientState
+@inject ContentClipboard ContentClipboard
 @inject IStringLocalizer Loc
 @inject MarkdownToHtml MarkdownToHtml
 @inject IGTourService GTourService
@@ -19,6 +20,7 @@
             </div>
         }
         <InputText class="form-control bg-transparent" aria-label="@Loc["Note title"]" Value="@Note.Title" ValueExpression="() => Note.Title" ValueChanged="(string title) => SaveTitle(Note, title)" />
+        <button class="btn btn-outline-secondary" aria-label="@Loc["Copy"]" title="@Loc["Copy"]" @onclick="CopyToClipboard"><i class="bi bi-files" aria-hidden="true"></i></button>
         <button class="btn btn-outline-primary" aria-label="@Loc["Delete"]" @onclick="async () => { await NoteService.DeleteNote(Note); await CloseSelected.InvokeAsync(); await ContentDeleted.InvokeAsync(); }" data-notes-step-6><i class="bi bi-trash"></i></button>
     </div>
 
@@ -60,6 +62,12 @@
 }
 
 @code {
+    async Task CopyToClipboard()
+    {
+        ContentClipboard.CopyNote(Note, ClientState.User.Id, ClientState.DataLocation);
+        await Copied.InvokeAsync();
+    }
+
     TourStep[] tourSteps =
     {
     };
@@ -75,6 +83,9 @@
 
     [Parameter]
     public EventCallback CloseSelected { get; set; }
+
+    [Parameter]
+    public EventCallback Copied { get; set; }
 
     [CascadingParameter(Name = "ContentDeleted")]
     public EventCallback ContentDeleted { get; set; }

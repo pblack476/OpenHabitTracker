@@ -14,6 +14,7 @@
 @inject INoteService NoteService
 @inject ICategoryService CategoryService
 @inject ClientState ClientState
+@inject ContentClipboard ContentClipboard
 @inject IJsInterop JsInterop
 @inject ISearchFilterService SearchFilterService
 @inject IStringLocalizer Loc
@@ -26,6 +27,7 @@
 
     @if (NoteService.NewNote is null)
     {
+        <button class="btn btn-outline-secondary app-paste-button my-1" aria-label="@Loc["Paste"]" title="@Loc["Paste"]" disabled="@(!ContentClipboard.CanPasteNote(ClientState.User.Id, ClientState.DataLocation))" @onclick="PasteCopied"><i class="bi bi-clipboard-plus" aria-hidden="true"></i><span class="d-none d-sm-inline ms-1">@Loc["Paste"]</span></button>
         <button class="btn btn-plain input-group d-flex flex-nowrap my-1 p-0" @onclick="AddNew">
             <span class="input-group-text fw-bold text-primary flex-grow-1">@Loc["Add new note"]</span>
 
@@ -98,7 +100,7 @@
                 <div class="@($"my-{ClientState.Settings.VerticalMargin}")">
                     @if (!_showSecondColumn && note.Id == Id && NoteService.NewNote is null)
                     {
-                        <NoteComponent Note="note" CloseSelected="CloseSelected" />
+                        <NoteComponent Note="note" CloseSelected="CloseSelected" Copied="OnCopied" />
                     }
                     else
                     {
@@ -147,7 +149,7 @@
     <div class="col child-column px-0 px-md-1 py-1">
         @if (_showNoteComponent)
         {
-            <NoteComponent Note="NoteService.SelectedNote" CloseSelected="CloseSelected" />
+            <NoteComponent Note="NoteService.SelectedNote" CloseSelected="CloseSelected" Copied="OnCopied" />
         }
         else if (NoteService.Notes is not null)
         {
@@ -302,6 +304,15 @@
         await NoteService.AddNote();
         _pageStateChanged = !_pageStateChanged;
     }
+
+
+    void PasteCopied()
+    {
+        NoteService.NewNote = ContentClipboard.PasteNote(ClientState.User.Id, ClientState.DataLocation);
+        shouldFocus = NoteService.NewNote is not null;
+    }
+
+    void OnCopied() => StateHasChanged();
 
     void AddNew()
     {
