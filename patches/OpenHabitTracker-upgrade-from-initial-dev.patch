@@ -1,0 +1,1564 @@
+diff --git a/.github/workflows/personal-dev.yml b/.github/workflows/personal-dev.yml
+new file mode 100644
+--- /dev/null
++++ b/.github/workflows/personal-dev.yml
+@@ -0,0 +1,37 @@
++name: Personal fork checks and Linux build
++
++on:
++  push:
++    branches: [personal/dev]
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++jobs:
++  test-and-package:
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Set up .NET 10
++        uses: actions/setup-dotnet@v4
++        with:
++          dotnet-version: '10.0.x'
++
++      - name: Run unit tests
++        run: dotnet test OpenHabitTracker.UnitTests/OpenHabitTracker.UnitTests.csproj -c Release -m:1 -p:UseSharedCompilation=false
++
++      - name: Publish Linux x64
++        run: |
++          dotnet publish OpenHabitTracker.Blazor.Photino/OpenHabitTracker.Blazor.Photino.csproj \
++            -c Release -f net10.0 -r linux-x64 --self-contained true \
++            -p:PublishSingleFile=true -p:UseSharedCompilation=false -o publish-linux-x64
++
++      - name: Upload native Linux application
++        uses: actions/upload-artifact@v4
++        with:
++          name: OpenHabitTracker-personal-linux-x64
++          path: publish-linux-x64/
++          if-no-files-found: error
+diff --git a/OpenHabitTracker.Blazor/Components/HabitComponent.razor b/OpenHabitTracker.Blazor/Components/HabitComponent.razor
+--- a/OpenHabitTracker.Blazor/Components/HabitComponent.razor
++++ b/OpenHabitTracker.Blazor/Components/HabitComponent.razor
+@@ -10,6 +10,8 @@
+ @inject IHabitService HabitService
+ @inject IJsInterop JsInterop
+ @inject ClientState ClientState
++@inject ContentClipboard ContentClipboard
++@inject IItemService ItemService
+ @inject IStringLocalizer Loc
+ @inject IGTourService GTourService
+ 
+@@ -26,6 +28,7 @@
+         {
+             <button class="btn btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="OnMarkAsDoneClicked" data-habits-step-9><i class="bi bi-check-square"></i></button>
+         }
++        <button class="btn btn-outline-secondary" aria-label="@Loc["Copy"]" title="@Loc["Copy"]" @onclick="CopyToClipboard"><i class="bi bi-files" aria-hidden="true"></i></button>
+         <button class="btn btn-outline-primary" aria-label="@Loc["Delete"]" @onclick="async () => { await HabitService.DeleteHabit(Habit); await CloseSelected.InvokeAsync(); await ContentDeleted.InvokeAsync(); }" data-habits-step-10><i class="bi bi-trash"></i></button>
+     </div>
+ 
+@@ -231,6 +234,14 @@
+ }
+ 
+ @code {
++    async Task CopyToClipboard()
++    {
++        // Also capture lazily loaded checklist items before taking the snapshot.
++        await ItemService.Initialize(Habit);
++        ContentClipboard.CopyHabit(Habit, ClientState.User.Id, ClientState.DataLocation);
++        await Copied.InvokeAsync();
++    }
++
+     TourStep[] tourSteps =
+     {
+     };
+@@ -250,6 +261,9 @@
+     [Parameter]
+     public EventCallback CloseSelected { get; set; }
+ 
++    [Parameter]
++    public EventCallback Copied { get; set; }
++
+     [CascadingParameter(Name = "ContentDeleted")]
+     public EventCallback ContentDeleted { get; set; }
+ 
+diff --git a/OpenHabitTracker.Blazor/Components/NoteComponent.razor b/OpenHabitTracker.Blazor/Components/NoteComponent.razor
+--- a/OpenHabitTracker.Blazor/Components/NoteComponent.razor
++++ b/OpenHabitTracker.Blazor/Components/NoteComponent.razor
+@@ -6,6 +6,7 @@
+ @inject INoteService NoteService
+ @inject IJsInterop JsInterop
+ @inject ClientState ClientState
++@inject ContentClipboard ContentClipboard
+ @inject IStringLocalizer Loc
+ @inject MarkdownToHtml MarkdownToHtml
+ @inject IGTourService GTourService
+@@ -19,6 +20,7 @@
+             </div>
+         }
+         <InputText class="form-control bg-transparent" aria-label="@Loc["Note title"]" Value="@Note.Title" ValueExpression="() => Note.Title" ValueChanged="(string title) => SaveTitle(Note, title)" />
++        <button class="btn btn-outline-secondary" aria-label="@Loc["Copy"]" title="@Loc["Copy"]" @onclick="CopyToClipboard"><i class="bi bi-files" aria-hidden="true"></i></button>
+         <button class="btn btn-outline-primary" aria-label="@Loc["Delete"]" @onclick="async () => { await NoteService.DeleteNote(Note); await CloseSelected.InvokeAsync(); await ContentDeleted.InvokeAsync(); }" data-notes-step-6><i class="bi bi-trash"></i></button>
+     </div>
+ 
+@@ -60,6 +62,12 @@
+ }
+ 
+ @code {
++    async Task CopyToClipboard()
++    {
++        ContentClipboard.CopyNote(Note, ClientState.User.Id, ClientState.DataLocation);
++        await Copied.InvokeAsync();
++    }
++
+     TourStep[] tourSteps =
+     {
+     };
+@@ -76,6 +84,9 @@
+     [Parameter]
+     public EventCallback CloseSelected { get; set; }
+ 
++    [Parameter]
++    public EventCallback Copied { get; set; }
++
+     [CascadingParameter(Name = "ContentDeleted")]
+     public EventCallback ContentDeleted { get; set; }
+ 
+diff --git a/OpenHabitTracker.Blazor/Components/TaskComponent.razor b/OpenHabitTracker.Blazor/Components/TaskComponent.razor
+--- a/OpenHabitTracker.Blazor/Components/TaskComponent.razor
++++ b/OpenHabitTracker.Blazor/Components/TaskComponent.razor
+@@ -8,6 +8,8 @@
+ @inject ITaskService TaskService
+ @inject IJsInterop JsInterop
+ @inject ClientState ClientState
++@inject ContentClipboard ContentClipboard
++@inject IItemService ItemService
+ @inject IStringLocalizer Loc
+ @inject IGTourService GTourService
+ 
+@@ -21,6 +23,7 @@
+         }
+         <InputText class="form-control bg-transparent" aria-label="@Loc["Task title"]" Value="@Task.Title" ValueExpression="() => Task.Title" ValueChanged="(string title) => SaveTitle(Task, title)" />
+         <button class="@($"btn {(Task.CompletedAt is null ? "btn-outline-primary" : "btn-primary")}")" aria-label="@Loc["Mark as done"]" @onclick="() => TaskService.MarkAsDone(Task)" data-tasks-step-8><i class="bi bi-check-square"></i></button>
++        <button class="btn btn-outline-secondary" aria-label="@Loc["Copy"]" title="@Loc["Copy"]" @onclick="CopyToClipboard"><i class="bi bi-files" aria-hidden="true"></i></button>
+         <button class="btn btn-outline-primary" aria-label="@Loc["Delete"]" @onclick="async () => { await TaskService.DeleteTask(Task); await CloseSelected.InvokeAsync(); await ContentDeleted.InvokeAsync(); }" data-tasks-step-9><i class="bi bi-trash"></i></button>
+     </div>
+ 
+@@ -133,6 +136,14 @@
+ }
+ 
+ @code {
++    async Task CopyToClipboard()
++    {
++        // Also capture lazily loaded checklist items before taking the snapshot.
++        await ItemService.Initialize(Task);
++        ContentClipboard.CopyTask(Task, ClientState.User.Id, ClientState.DataLocation);
++        await Copied.InvokeAsync();
++    }
++
+     TourStep[] tourSteps =
+     {
+     };
+@@ -149,6 +160,9 @@
+     [Parameter]
+     public EventCallback CloseSelected { get; set; }
+ 
++    [Parameter]
++    public EventCallback Copied { get; set; }
++
+     [CascadingParameter(Name = "ContentDeleted")]
+     public EventCallback ContentDeleted { get; set; }
+ 
+diff --git a/OpenHabitTracker.Blazor/Layout/Main.razor b/OpenHabitTracker.Blazor/Layout/Main.razor
+--- a/OpenHabitTracker.Blazor/Layout/Main.razor
++++ b/OpenHabitTracker.Blazor/Layout/Main.razor
+@@ -21,18 +21,20 @@
+ 
+ @* Root <div> inside <html><body><app> *@
+ 
+-<div class="container-fluid d-flex flex-column vh-100 mh-100 overflow-hidden">
++<div class="container-fluid app-shell d-flex flex-column vh-100 mh-100 overflow-hidden">
+ 
+     @* Header row *@
+ 
+-    <nav class="row flex-shrink-1" aria-label="@Loc["Main navigation"]">
++    <nav class="row flex-shrink-1 app-topbar" aria-label="@Loc["Main navigation"]">
+ 
+         @* Header column *@
+ 
+-        <div class="col bg-body-secondary d-flex align-items-center">
++        <div class="col bg-body-secondary d-flex align-items-center app-topbar-inner">
+ 
+             <button @ref="_menuButtonRef" class="nav-link px-2 py-1 my-1 @(_dynamicComponentType == typeof(Menu) ? "active" : "")" @onclick="ToggleMenu" aria-label="@Loc["Toggle menu"]" aria-expanded="@(_dynamicComponentType == typeof(Menu))" data-main-step-1><i class="bi bi-three-dots-vertical"></i></button>
+ 
++            <span class="app-brand d-none d-xl-inline-flex align-items-center gap-2"><i class="bi bi-check2-circle" aria-hidden="true"></i><strong>OpenHabitTracker</strong></span>
++
+             @* <button class="nav-link" @onclick="Localization.JsonStringLocalizer.SerializeMissingAndUnusedValues"><i class="bi bi-floppy"></i> Save</button> *@
+             @* <button class="nav-link" @onclick="() =>
+                 {
+@@ -47,12 +49,14 @@
+             {
+                 <NavLink class="nav-link px-2 py-1 ms-3" href="/" Match=NavLinkMatch.All aria-current="@AriaCurrentPage("")" aria-label="@Loc["Home"]" data-main-step-2><i class="bi bi-house"></i></NavLink>
+             }
+-            <NavLink class="nav-link px-2 py-1 ms-3" href="notes" aria-current="@AriaCurrentPage("notes")" aria-label="@Loc["Notes"]" data-main-step-3><i class="bi bi-sticky"></i></NavLink>
+-            <NavLink class="nav-link px-2 py-1 ms-3" href="tasks" aria-current="@AriaCurrentPage("tasks")" aria-label="@Loc["Tasks"]" data-main-step-4><i class="bi bi-list-task"></i></NavLink>
+-            <NavLink class="nav-link px-2 py-1 ms-3" href="habits" aria-current="@AriaCurrentPage("habits")" aria-label="@Loc["Habits"]" data-main-step-5><i class="bi bi-repeat"></i></NavLink>
++            <NavLink class="nav-link px-2 py-1 ms-3" href="notes" aria-current="@AriaCurrentPage("notes")" aria-label="@Loc["Notes"]" data-main-step-3><i class="bi bi-sticky"></i><span class="d-none d-lg-inline">@Loc["Notes"]</span></NavLink>
++            <NavLink class="nav-link px-2 py-1 ms-3" href="tasks" aria-current="@AriaCurrentPage("tasks")" aria-label="@Loc["Tasks"]" data-main-step-4><i class="bi bi-list-task"></i><span class="d-none d-lg-inline">@Loc["Tasks"]</span></NavLink>
++            <NavLink class="nav-link px-2 py-1 ms-3" href="habits" aria-current="@AriaCurrentPage("habits")" aria-label="@Loc["Habits"]" data-main-step-5><i class="bi bi-repeat"></i><span class="d-none d-lg-inline">@Loc["Habits"]</span></NavLink>
+ 
+             <button @ref="_searchButtonRef" class="nav-link px-2 py-1 ms-3 @(_dynamicComponentType == typeof(Search) ? "active" : "")" @onclick="ToggleSearch" aria-label="@Loc["Search, Filter, Sort"]" aria-expanded="@(_dynamicComponentType == typeof(Search))" data-main-step-6><i class="bi bi-search"></i></button>
+ 
++            <button @ref="_remindersButtonRef" class="nav-link px-2 py-1 ms-3 @(_dynamicComponentType == typeof(Settings) ? "active" : "")" @onclick="ToggleReminders" aria-label="@Loc["Reminders"]" title="@Loc["Reminders"]" aria-expanded="@(_dynamicComponentType == typeof(Settings))"><i class="bi bi-bell" aria-hidden="true"></i></button>
++
+             @if (ClientState.Settings.ShowHelp)
+             {
+                 <button class="nav-link px-2 py-1 ms-3" @onclick="@(() => StartTour("main"))" aria-label="@Loc["Help"]" data-main-step-7><i class="bi bi-question-circle"></i></button>
+@@ -94,7 +98,7 @@
+             {
+                 @* Sidebar column *@
+ 
+-                <div id="sidebar-container" class="col-12 col-md-2 child-column px-0 px-md-1" style="min-width: 350px" role="region" aria-label="@Loc[_titleByTypeName[_dynamicComponentType!.Name]]" tabindex="-1" @onkeydown="HandleSidebarKeyDown">
++                <div id="sidebar-container" class="col-12 col-md-3 child-column app-sidebar px-0 px-md-1" role="region" aria-label="@Loc[_titleByTypeName[_dynamicComponentType!.Name]]" tabindex="-1" @onkeydown="HandleSidebarKeyDown">
+ 
+                     @* Sidebar title *@
+ 
+@@ -196,7 +200,8 @@
+ 
+     private Dimensions? _windowDimensions;
+ 
+-    bool _showHome => _windowDimensions?.Width >= 1280 || _windowDimensions?.Width < 768;
++    // The overview dashboard remains reachable at every window width.
++    bool _showHome => true;
+ 
+     private Type? _dynamicComponentType;
+     private Type? _previousDynamicComponentType;
+@@ -206,6 +211,7 @@
+ 
+     private ElementReference _menuButtonRef;
+     private ElementReference _searchButtonRef;
++    private ElementReference _remindersButtonRef;
+     private ElementReference? _lastOpenerRef;
+     private Dictionary<string, Dictionary<string, object>> _dynamicComponentParametersByName = new();
+ 
+@@ -473,6 +479,12 @@
+         }
+     }
+ 
++    private void ToggleReminders()
++    {
++        _lastOpenerRef = _remindersButtonRef;
++        _dynamicComponentType = _dynamicComponentType == typeof(Settings) ? null : typeof(Settings);
++    }
++
+     private void ToggleSearch()
+     {
+         _lastOpenerRef = _searchButtonRef;
+diff --git a/OpenHabitTracker.Blazor/Pages/Habits.razor b/OpenHabitTracker.Blazor/Pages/Habits.razor
+--- a/OpenHabitTracker.Blazor/Pages/Habits.razor
++++ b/OpenHabitTracker.Blazor/Pages/Habits.razor
+@@ -14,6 +14,7 @@
+ @inject IHabitService HabitService
+ @inject ICategoryService CategoryService
+ @inject ClientState ClientState
++@inject ContentClipboard ContentClipboard
+ @inject IJsInterop JsInterop
+ @inject ISearchFilterService SearchFilterService
+ @inject IStringLocalizer Loc
+@@ -26,6 +27,7 @@
+ 
+     @if (HabitService.NewHabit is null)
+     {
++        <button class="btn btn-outline-secondary app-paste-button my-1" aria-label="@Loc["Paste"]" title="@Loc["Paste"]" disabled="@(!ContentClipboard.CanPasteHabit(ClientState.User.Id, ClientState.DataLocation))" @onclick="PasteCopied"><i class="bi bi-clipboard-plus" aria-hidden="true"></i><span class="d-none d-sm-inline ms-1">@Loc["Paste"]</span></button>
+         <button class="btn btn-plain input-group d-flex flex-nowrap my-1 p-0" @onclick="AddNew">
+             <span class="input-group-text fw-bold text-primary flex-grow-1">@Loc["Add new habit"]</span>
+ 
+@@ -130,10 +132,13 @@
+ 
+             <div class="m-2 fs-4"><i class="bi bi-repeat" aria-hidden="true"></i> @Loc["Habits"]</div>
+ 
++            <div class="ms-auto d-flex align-items-center gap-1">
++                <button class="@($"btn btn-sm {(ClientState.Settings.SortBy[ContentType.Habit] == Sort.Urgency ? "btn-primary" : "btn-outline-secondary")}")" aria-label="@Loc["Urgency"]" title="@Loc["Urgency"]" @onclick="UseUrgencySort"><i class="bi bi-sort-down-alt" aria-hidden="true"></i><span class="d-none d-xl-inline ms-1">@Loc["Urgency"]</span></button>
+             @if (ClientState.Settings.ShowHelp)
+             {
+                 <button class="btn btn-plain ms-auto m-1" aria-label="@Loc["Help"]" @onclick="@(() => StartTour("habits"))"><i class="bi bi-question-circle"></i></button>
+             }
++            </div>
+         </div>
+ 
+         DateTime weekStart = CalendarParams.GetFirstDayOfWeek(ClientState.Settings.FirstDayOfWeek, DateTime.Today);
+@@ -171,11 +176,11 @@
+                 <div class="@($"my-{ClientState.Settings.VerticalMargin} {(showHabitComponent ? "" : "d-flex")}")">
+                     @if (showHabitComponent)
+                     {
+-                        <HabitComponent Habit="habit" CloseSelected="CloseSelected" />
++                        <HabitComponent Habit="habit" CloseSelected="CloseSelected" Copied="OnCopied" />
+                     }
+                     else
+                     {
+-                        <div class="@($"w-100 {habit.Color}")">
++                        <div class="@($"w-100 {habit.Color} app-item-card")">
+                             <div class="input-group flex-nowrap" style="@($"{(_displayBasedOnWidth && ClientState.Settings.ShowSmallCalendar ? "height: 50px;" : "")}")">
+ 
+                                 @if (ClientState.Settings.ShowPriorityDropdown)
+@@ -252,7 +257,7 @@
+     <div class="col child-column px-0 px-md-1 py-1">
+         @if (_showHabitComponent)
+         {
+-            <HabitComponent Habit="HabitService.SelectedHabit" HabitChanged="OnHabitChanged" CloseSelected="CloseSelected" />
++            <HabitComponent Habit="HabitService.SelectedHabit" HabitChanged="OnHabitChanged" CloseSelected="CloseSelected" Copied="OnCopied" />
+         }
+         else if (HabitService.Habits is not null)
+         {
+@@ -412,6 +417,21 @@
+         }
+     }
+ 
++
++    async Task UseUrgencySort()
++    {
++        ClientState.Settings.SortBy[ContentType.Habit] = Sort.Urgency;
++        await ClientState.UpdateSettings();
++    }
++
++    void PasteCopied()
++    {
++        HabitService.NewHabit = ContentClipboard.PasteHabit(ClientState.User.Id, ClientState.DataLocation);
++        shouldFocus = HabitService.NewHabit is not null;
++    }
++
++    void OnCopied() => StateHasChanged();
++
+     void AddNew()
+     {
+         HabitService.NewHabit = new() { Color = "bg-info-subtle" };
+diff --git a/OpenHabitTracker.Blazor/Pages/Home.razor b/OpenHabitTracker.Blazor/Pages/Home.razor
+--- a/OpenHabitTracker.Blazor/Pages/Home.razor
++++ b/OpenHabitTracker.Blazor/Pages/Home.razor
+@@ -1,15 +1,39 @@
+-﻿@page "/"
+-
+-@using OpenHabitTracker.Data
++@page "/"
++@using OpenHabitTracker.App
++@using OpenHabitTracker.Query
++@inject ClientState ClientState
++@inject IStringLocalizer Loc
+ 
+ <PageTitle>OpenHabitTracker</PageTitle>
++<section class="app-dashboard" aria-label="@Loc["Your overview"]">
++    <span class="app-dashboard-label"><i class="bi bi-grid-1x2" aria-hidden="true"></i> @Loc["Your overview"]</span>
++    <h1 class="app-dashboard-title">@Loc["Your overview"]</h1>
++    <div class="app-kpis">
++        <NavLink class="app-kpi" href="tasks"><i class="bi bi-list-check" aria-hidden="true"></i><strong>@OpenTaskCount</strong><span>@Loc["Open tasks"]</span></NavLink>
++        <NavLink class="app-kpi app-kpi-danger" href="tasks"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><strong>@OverdueTaskCount</strong><span>@Loc["Overdue tasks"]</span></NavLink>
++        <NavLink class="app-kpi" href="habits"><i class="bi bi-repeat" aria-hidden="true"></i><strong>@RecurringCount</strong><span>@Loc["Recurring tasks"]</span></NavLink>
++        <NavLink class="app-kpi" href="notes"><i class="bi bi-sticky" aria-hidden="true"></i><strong>@NoteCount</strong><span>@Loc["Notes ready"]</span></NavLink>
++    </div>
++</section>
+ 
+ <Notes IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
+ <Tasks IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
+ <Habits IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
+ 
+ @code {
+     bool _isCollapsedChanged;
++    int OpenTaskCount => ClientState.Tasks?.Values.Count(t => !t.IsDeleted && t.CompletedAt is null) ?? 0;
++    int OverdueTaskCount => ClientState.Tasks?.Values.Count(t => !t.IsDeleted && UrgencyOrder.GetTaskBucket(t, DateTime.Now) == UrgencyOrder.TaskBucket.Overdue) ?? 0;
++    int RecurringCount => ClientState.Habits?.Values.Count(h => !h.IsDeleted) ?? 0;
++    int NoteCount => ClientState.Notes?.Values.Count(n => !n.IsDeleted) ?? 0;
++
++    protected override async Task OnInitializedAsync()
++    {
++        await ClientState.LoadCategories();
++        await ClientState.LoadNotes();
++        await ClientState.LoadTasks();
++        await ClientState.LoadHabits();
++    }
+ 
+     void OnIsCollapsedChanged() => _isCollapsedChanged = !_isCollapsedChanged;
+-}
+\ No newline at end of file
++}
+diff --git a/OpenHabitTracker.Blazor/Pages/Notes.razor b/OpenHabitTracker.Blazor/Pages/Notes.razor
+--- a/OpenHabitTracker.Blazor/Pages/Notes.razor
++++ b/OpenHabitTracker.Blazor/Pages/Notes.razor
+@@ -14,6 +14,7 @@
+ @inject INoteService NoteService
+ @inject ICategoryService CategoryService
+ @inject ClientState ClientState
++@inject ContentClipboard ContentClipboard
+ @inject IJsInterop JsInterop
+ @inject ISearchFilterService SearchFilterService
+ @inject IStringLocalizer Loc
+@@ -26,6 +27,7 @@
+ 
+     @if (NoteService.NewNote is null)
+     {
++        <button class="btn btn-outline-secondary app-paste-button my-1" aria-label="@Loc["Paste"]" title="@Loc["Paste"]" disabled="@(!ContentClipboard.CanPasteNote(ClientState.User.Id, ClientState.DataLocation))" @onclick="PasteCopied"><i class="bi bi-clipboard-plus" aria-hidden="true"></i><span class="d-none d-sm-inline ms-1">@Loc["Paste"]</span></button>
+         <button class="btn btn-plain input-group d-flex flex-nowrap my-1 p-0" @onclick="AddNew">
+             <span class="input-group-text fw-bold text-primary flex-grow-1">@Loc["Add new note"]</span>
+ 
+@@ -98,11 +100,11 @@
+                 <div class="@($"my-{ClientState.Settings.VerticalMargin}")">
+                     @if (!_showSecondColumn && note.Id == Id && NoteService.NewNote is null)
+                     {
+-                        <NoteComponent Note="note" CloseSelected="CloseSelected" />
++                        <NoteComponent Note="note" CloseSelected="CloseSelected" Copied="OnCopied" />
+                     }
+                     else
+                     {
+-                        <div class="@note.Color">
++                        <div class="@($"{note.Color} app-item-card")">
+                             <div class="input-group flex-nowrap">
+ 
+                                 @if (ClientState.Settings.ShowPriorityDropdown)
+@@ -147,7 +149,7 @@
+     <div class="col child-column px-0 px-md-1 py-1">
+         @if (_showNoteComponent)
+         {
+-            <NoteComponent Note="NoteService.SelectedNote" CloseSelected="CloseSelected" />
++            <NoteComponent Note="NoteService.SelectedNote" CloseSelected="CloseSelected" Copied="OnCopied" />
+         }
+         else if (NoteService.Notes is not null)
+         {
+@@ -303,6 +305,15 @@
+         _pageStateChanged = !_pageStateChanged;
+     }
+ 
++
++    void PasteCopied()
++    {
++        NoteService.NewNote = ContentClipboard.PasteNote(ClientState.User.Id, ClientState.DataLocation);
++        shouldFocus = NoteService.NewNote is not null;
++    }
++
++    void OnCopied() => StateHasChanged();
++
+     void AddNew()
+     {
+         NoteService.NewNote = new() { Color = "bg-info-subtle" };
+diff --git a/OpenHabitTracker.Blazor/Pages/Search.razor b/OpenHabitTracker.Blazor/Pages/Search.razor
+--- a/OpenHabitTracker.Blazor/Pages/Search.razor
++++ b/OpenHabitTracker.Blazor/Pages/Search.razor
+@@ -320,6 +320,7 @@
+                     <option value="@Sort.Duration">@Loc["Duration"]</option>
+                     <option value="@Sort.ElapsedTime">@Loc["Elapsed time"]</option>
+                     <option value="@Sort.PlannedAt">@Loc["Planned at"]</option>
++                    <option value="@Sort.Urgency">@Loc["Urgency"]</option>
+                     <option value="@Sort.TimeSpent">@Loc["Time spent"]</option>
+                 </InputSelect>
+             </div>
+@@ -337,6 +338,7 @@
+                     <option value="@Sort.AverageTimeSpent">@Loc["Average time spent"]</option>
+                     <option value="@Sort.ElapsedTime">@Loc["Elapsed time"]</option>
+                     <option value="@Sort.SelectedRatio">@Loc["Selected interval ratio"]</option>
++                    <option value="@Sort.Urgency">@Loc["Urgency"]</option>
+                 </InputSelect>
+             </div>
+             }
+diff --git a/OpenHabitTracker.Blazor/Pages/Tasks.razor b/OpenHabitTracker.Blazor/Pages/Tasks.razor
+--- a/OpenHabitTracker.Blazor/Pages/Tasks.razor
++++ b/OpenHabitTracker.Blazor/Pages/Tasks.razor
+@@ -15,6 +15,7 @@
+ @inject ITaskService TaskService
+ @inject ICategoryService CategoryService
+ @inject ClientState ClientState
++@inject ContentClipboard ContentClipboard
+ @inject ISearchFilterService SearchFilterService
+ @inject IStringLocalizer Loc
+ @inject IPriorityService PriorityService
+@@ -27,6 +28,7 @@
+ 
+     @if (TaskService.NewTask is null)
+     {
++        <button class="btn btn-outline-secondary app-paste-button my-1" aria-label="@Loc["Paste"]" title="@Loc["Paste"]" disabled="@(!ContentClipboard.CanPasteTask(ClientState.User.Id, ClientState.DataLocation))" @onclick="PasteCopied"><i class="bi bi-clipboard-plus" aria-hidden="true"></i><span class="d-none d-sm-inline ms-1">@Loc["Paste"]</span></button>
+         <button class="btn btn-plain input-group d-flex flex-nowrap my-1 p-0" @onclick="AddNew">
+             <span class="input-group-text fw-bold text-primary flex-grow-1">@Loc["Add new task"]</span>
+ 
+@@ -99,10 +101,13 @@
+ 
+             <div class="m-2 fs-4"><i class="bi bi-list-task" aria-hidden="true"></i> @Loc["Tasks"]</div>
+ 
++            <div class="ms-auto d-flex align-items-center gap-1">
++                <button class="@($"btn btn-sm {(ClientState.Settings.SortBy[ContentType.Task] == Sort.Urgency ? "btn-primary" : "btn-outline-secondary")}")" aria-label="@Loc["Urgency"]" title="@Loc["Urgency"]" @onclick="UseUrgencySort"><i class="bi bi-sort-down-alt" aria-hidden="true"></i><span class="d-none d-xl-inline ms-1">@Loc["Urgency"]</span></button>
+             @if (ClientState.Settings.ShowHelp)
+             {
+                 <button class="btn btn-plain ms-auto m-1" aria-label="@Loc["Help"]" @onclick="@(() => StartTour("tasks"))"><i class="bi bi-question-circle"></i></button>
+             }
++            </div>
+         </div>
+ 
+         foreach (var group in GetTaskGroups())
+@@ -123,11 +128,11 @@
+                 <div class="@($"my-{ClientState.Settings.VerticalMargin}")">
+                     @if (!_showSecondColumn && task.Id == Id && TaskService.NewTask is null)
+                     {
+-                        <TaskComponent Task="task" CloseSelected="CloseSelected" />
++                        <TaskComponent Task="task" CloseSelected="CloseSelected" Copied="OnCopied" />
+                     }
+                     else
+                     {
+-                        <div class="@task.Color">
++                        <div class="@($"{task.Color} app-item-card")">
+                             <div class="input-group flex-nowrap">
+ 
+                                 @if (ClientState.Settings.ShowPriorityDropdown)
+@@ -143,6 +148,15 @@
+                                 <button class="@($"btn {(task.CompletedAt is null ? "btn-outline-primary" : "btn-primary")}")" aria-label="@Loc["Mark as done"]" @onclick="() => OnMarkAsDone(task)" data-tasks-step-4><i class="bi bi-check-square"></i></button>
+                             </div>
+ 
++                            @if (task.CompletedAt is null && UrgencyOrder.GetTaskBucket(task, DateTime.Now) == UrgencyOrder.TaskBucket.Overdue)
++                            {
++                                <span class="app-urgency-pill app-urgency-overdue"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> @Loc["Overdue"]</span>
++                            }
++                            else if (task.CompletedAt is null && UrgencyOrder.GetTaskBucket(task, DateTime.Now) == UrgencyOrder.TaskBucket.Today)
++                            {
++                                <span class="app-urgency-pill app-urgency-today">@Loc["Today"]</span>
++                            }
++
+                             @if (ClientState.Settings.ShowItemList)
+                             {
+                                 <div data-tasks-step-5>
+@@ -175,7 +189,7 @@
+     <div class="col child-column px-0 px-md-1 py-1">
+         @if (_showTaskComponent)
+         {
+-            <TaskComponent Task="TaskService.SelectedTask" CloseSelected="CloseSelected" />
++            <TaskComponent Task="TaskService.SelectedTask" CloseSelected="CloseSelected" Copied="OnCopied" />
+         }
+         else if (TaskService.Tasks is not null)
+         {
+@@ -344,6 +358,21 @@
+         _pageStateChanged = !_pageStateChanged;
+     }
+ 
++
++    async Task UseUrgencySort()
++    {
++        ClientState.Settings.SortBy[ContentType.Task] = Sort.Urgency;
++        await ClientState.UpdateSettings();
++    }
++
++    void PasteCopied()
++    {
++        TaskService.NewTask = ContentClipboard.PasteTask(ClientState.User.Id, ClientState.DataLocation);
++        shouldFocus = TaskService.NewTask is not null;
++    }
++
++    void OnCopied() => StateHasChanged();
++
+     void AddNew()
+     {
+         TaskService.NewTask = new() { Color = "bg-info-subtle" };
+diff --git a/OpenHabitTracker.Blazor/wwwroot/app.css b/OpenHabitTracker.Blazor/wwwroot/app.css
+--- a/OpenHabitTracker.Blazor/wwwroot/app.css
++++ b/OpenHabitTracker.Blazor/wwwroot/app.css
+@@ -282,3 +282,62 @@ html, body {
+     .blazor-error-boundary::after {
+         content: "An error has occurred."
+     }
++
++/* Modern personal-fork design, independent of the storage/data model. */
++.app-shell {
++    --app-radius: 14px;
++    --app-soft-outline: var(--bs-border-color-translucent);
++    background: color-mix(in srgb, var(--bs-body-bg) 94%, var(--bs-primary) 6%);
++    font-family: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
++    font-size: .96rem;
++}
++.app-shell .app-topbar { background: var(--bs-body-bg); border-bottom: 1px solid var(--app-soft-outline); box-shadow: 0 3px 18px rgba(0,0,0,.06); z-index: 5; }
++.app-topbar-inner { gap: .2rem; padding: .4rem 1rem; background: var(--bs-body-bg) !important; }
++.app-brand { font-size: .94rem; margin: 0 .8rem; white-space: nowrap; letter-spacing: -.025em; color: var(--bs-body-color); }
++.app-brand i { font-size: 1.4rem; color: var(--bs-primary); }
++.app-shell .app-topbar .nav-link {
++    display:inline-flex; align-items:center; justify-content:center; gap:.2rem;
++    min-height:2.5rem; min-width:2.5rem; margin-left:.2rem !important; padding:.4rem .7rem !important;
++    border-radius:12px; color:var(--bs-body-color); border:1px solid transparent; white-space:nowrap;
++    transition:background .15s ease;
++}
++.app-shell .app-topbar .nav-link:hover,.app-shell .app-topbar .nav-link.active {
++    background:var(--bs-primary-bg-subtle) !important; color:var(--bs-primary-text-emphasis); border-color:var(--app-soft-outline);
++}
++.app-shell .btn { border-radius: 11px !important; font-weight: 500; }
++.app-shell .form-control,.app-shell .form-select { border-radius: 10px !important; min-height: 2.5rem; }
++.app-shell .input-group > :first-child { border-top-left-radius: 10px !important; border-bottom-left-radius: 10px !important; }
++.app-shell .input-group > :last-child { border-top-right-radius: 10px !important; border-bottom-right-radius: 10px !important; }
++.app-shell .list-group { border-radius: var(--app-radius) !important; overflow: hidden; }
++.app-shell .list-group-item { border-color: var(--app-soft-outline); }
++.app-shell .child-column { padding-top:.6rem; padding-bottom:.8rem; }
++.app-shell .app-sidebar { background:var(--bs-body-bg); border-right:1px solid var(--app-soft-outline); }
++.app-shell .app-item-card {
++    border:1px solid var(--app-soft-outline); border-radius:var(--app-radius);
++    box-shadow:0 4px 16px rgba(0,0,0,.05); overflow:hidden;
++    transition: box-shadow .15s ease, border-color .15s ease;
++}
++.app-shell .app-item-card:hover { border-color:var(--bs-primary-border-subtle); box-shadow:0 8px 24px rgba(0,0,0,.1); }
++.app-shell #task-component,.app-shell #note-component,.app-shell #habit-component {
++    padding:.6rem; border-radius:var(--app-radius); border:1px solid var(--bs-primary-border-subtle); box-shadow:0 6px 22px rgba(0,0,0,.08);
++}
++.app-shell .app-paste-button { min-height: 2.75rem; white-space: nowrap; }
++.app-shell .app-urgency-pill { display:inline-flex; font-size:.73rem; font-weight:650; padding:.2rem .55rem; border-radius:999px; margin:.35rem .5rem; }
++.app-shell .app-urgency-overdue { background:var(--bs-danger-bg-subtle); color:var(--bs-danger-text-emphasis); }
++.app-shell .app-urgency-today { background:var(--bs-warning-bg-subtle); color:var(--bs-warning-text-emphasis); }
++.app-dashboard { padding:1rem .5rem 1.25rem; }
++.app-dashboard-label { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--bs-primary); }
++.app-dashboard-title { font-size:clamp(1.6rem,2vw + .7rem,2.25rem); letter-spacing:-.04em; font-weight:750; margin:.3rem 0 1.2rem; }
++.app-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; }
++.app-kpi { display:flex; flex-direction:column; gap:.35rem; padding:1rem; text-decoration:none; color:var(--bs-body-color); background:var(--bs-body-bg); border:1px solid var(--app-soft-outline); border-radius:16px; box-shadow:0 3px 14px rgba(0,0,0,.05); }
++.app-kpi:hover { color:var(--bs-body-color); border-color:var(--bs-primary-border-subtle); }
++.app-kpi span { font-size:.82rem; color:var(--bs-secondary-color); }
++.app-kpi strong { font-size:2rem; letter-spacing:-.05em; line-height:1.05; }
++.app-kpi .bi { color:var(--bs-primary); }
++.app-kpi-danger .bi,.app-kpi-danger strong { color:var(--bs-danger-text-emphasis); }
++.app-shell :is(a,button,input,textarea,select):focus-visible { outline:3px solid var(--bs-primary); outline-offset:2px; }
++@media (min-width:768px) { .app-shell .app-sidebar { flex:0 0 315px; max-width:min(315px,40vw); } }
++@media (max-width:991px) { .app-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
++@media (max-width:420px) { .app-topbar-inner { padding:.3rem .35rem; gap:0; } .app-shell .app-topbar .nav-link { min-width:2.1rem; padding:.35rem .45rem !important; } .app-kpis { gap:.5rem; } .app-kpi { padding:.8rem; } .app-kpi strong { font-size:1.65rem; } }
++@media (prefers-reduced-motion:reduce) { .app-shell .app-topbar .nav-link,.app-shell .app-item-card { transition:none; } }
++
+diff --git a/OpenHabitTracker.UnitTests/Components/HabitComponentTests.cs b/OpenHabitTracker.UnitTests/Components/HabitComponentTests.cs
+--- a/OpenHabitTracker.UnitTests/Components/HabitComponentTests.cs
++++ b/OpenHabitTracker.UnitTests/Components/HabitComponentTests.cs
+@@ -53,6 +53,7 @@ public void SetUp()
+         _ctx.Services.AddScoped(_ => _habitService);
+         _ctx.Services.AddScoped(_ => _clientState);
+         _ctx.Services.AddSingleton(loc);
++        _ctx.Services.AddScoped<ContentClipboard>();
+         _ctx.Services.AddSingleton(Substitute.For<IGTourService>());
+         _ctx.Services.AddSingleton(Substitute.For<IItemService>());
+         _ctx.Services.AddSingleton(Substitute.For<ISearchFilterService>());
+diff --git a/OpenHabitTracker.UnitTests/Components/NoteComponentTests.cs b/OpenHabitTracker.UnitTests/Components/NoteComponentTests.cs
+--- a/OpenHabitTracker.UnitTests/Components/NoteComponentTests.cs
++++ b/OpenHabitTracker.UnitTests/Components/NoteComponentTests.cs
+@@ -49,6 +49,7 @@ public void SetUp()
+         _ctx.Services.AddScoped(_ => clientState);
+         _ctx.Services.AddScoped(_ => markdownToHtml);
+         _ctx.Services.AddSingleton(loc);
++        _ctx.Services.AddScoped<ContentClipboard>();
+         _ctx.Services.AddSingleton(Substitute.For<IGTourService>());
+ 
+         _note = new NoteModel { Title = "My Note", Content = "**bold**", ContentMarkdown = "<strong>bold</strong>" };
+diff --git a/OpenHabitTracker.UnitTests/Query/UrgencyOrderTests.cs b/OpenHabitTracker.UnitTests/Query/UrgencyOrderTests.cs
+new file mode 100644
+--- /dev/null
++++ b/OpenHabitTracker.UnitTests/Query/UrgencyOrderTests.cs
+@@ -0,0 +1,51 @@
++using OpenHabitTracker.Data;
++using OpenHabitTracker.Data.Models;
++using OpenHabitTracker.Query;
++
++namespace OpenHabitTracker.UnitTests.Query;
++
++[TestFixture]
++public class UrgencyOrderTests
++{
++    private static readonly DateTime Now = new(2026, 11, 13, 15, 0, 0);
++
++    [Test]
++    public void SortTasks_OverdueThenTodayThenSoonThenUnscheduledThenCompleted()
++    {
++        TaskModel[] models =
++        [
++            new() { Title = "No date" },
++            new() { Title = "Later", PlannedAt = Now.AddDays(8) },
++            new() { Title = "Today", PlannedAt = Now.AddHours(1) },
++            new() { Title = "Overdue", PlannedAt = Now.AddHours(-1) },
++            new() { Title = "Completed", CompletedAt = Now },
++            new() { Title = "Soon", PlannedAt = Now.AddDays(2) }
++        ];
++
++        Assert.That(UrgencyOrder.OrderTasks(models, Now).Select(x => x.Title),
++            Is.EqualTo(new[] { "Overdue", "Today", "Soon", "Later", "No date", "Completed" }));
++    }
++
++    [Test]
++    public void DateOnlyToday_IsNotOverdue()
++    {
++        TaskModel allDay = new() { PlannedAt = Now.Date.AddHours(23).AddMinutes(59).AddSeconds(59) };
++        Assert.That(UrgencyOrder.GetTaskBucket(allDay, Now), Is.EqualTo(UrgencyOrder.TaskBucket.Today));
++    }
++
++    [Test]
++    public void HigherPriorityWinsWithinTheSameUrgencyBucket()
++    {
++        TaskModel low = new() { Priority = Priority.Low, PlannedAt = Now.AddHours(2) };
++        TaskModel high = new() { Priority = Priority.High, PlannedAt = Now.AddHours(3) };
++        Assert.That(UrgencyOrder.OrderTasks([low, high], Now).First(), Is.SameAs(high));
++    }
++
++    [Test]
++    public void RecurringTaskUrgency_FollowsRatioOfElapsedToDesiredInterval()
++    {
++        HabitModel recent = new() { CreatedAt = DateTime.Now.AddMinutes(-5), RepeatInterval = 1 };
++        HabitModel overdue = new() { CreatedAt = DateTime.Now.AddDays(-5), RepeatInterval = 1 };
++        Assert.That(UrgencyOrder.OrderHabits([recent, overdue], Ratio.ElapsedToDesired).First(), Is.SameAs(overdue));
++    }
++}
+diff --git a/OpenHabitTracker.UnitTests/Services/ContentClipboardTests.cs b/OpenHabitTracker.UnitTests/Services/ContentClipboardTests.cs
+new file mode 100644
+--- /dev/null
++++ b/OpenHabitTracker.UnitTests/Services/ContentClipboardTests.cs
+@@ -0,0 +1,85 @@
++using OpenHabitTracker.Data;
++using OpenHabitTracker.Data.Models;
++using OpenHabitTracker.Services;
++
++namespace OpenHabitTracker.UnitTests.Services;
++
++[TestFixture]
++public class ContentClipboardTests
++{
++    [Test]
++    public void TaskCopy_IsDetachedAndDoesNotCarryCompletion()
++    {
++        DateTime scheduled = new(2026, 11, 20, 9, 0, 0);
++        TaskModel original = new()
++        {
++            Title = "Relatorio",
++            Priority = Priority.High,
++            Color = "bg-info-subtle",
++            PlannedAt = scheduled,
++            CompletedAt = DateTime.Now,
++            Items = [new ItemModel { Title = "Revisar", DoneAt = DateTime.Now }]
++        };
++        ContentClipboard clipboard = new();
++        clipboard.CopyTask(original, 1, DataLocation.Local);
++        original.Title = "Alterado";
++        original.Items[0].Title = "Alterado";
++
++        TaskModel? pasted = clipboard.PasteTask(1, DataLocation.Local);
++        Assert.That(pasted, Is.Not.Null);
++        Assert.Multiple(() =>
++        {
++            Assert.That(pasted!.Title, Is.EqualTo("Relatorio"));
++            Assert.That(pasted.Priority, Is.EqualTo(Priority.High));
++            Assert.That(pasted.PlannedAt, Is.EqualTo(scheduled));
++            Assert.That(pasted.CompletedAt, Is.Null);
++            Assert.That(pasted.StartedAt, Is.Null);
++            Assert.That(pasted.Items, Has.Count.EqualTo(1));
++            Assert.That(pasted.Items![0].Title, Is.EqualTo("Revisar"));
++            Assert.That(pasted.Items[0].DoneAt, Is.Null);
++        });
++        pasted.Items![0].Title = "Outra copia";
++        Assert.That(clipboard.PasteTask(1, DataLocation.Local)!.Items![0].Title, Is.EqualTo("Revisar"));
++    }
++
++    [Test]
++    public void NoteCopy_KeepsContentAndSeparatesAccounts()
++    {
++        ContentClipboard clipboard = new();
++        clipboard.CopyNote(new NoteModel { Title = "Plano", Content = "**texto**" }, 1, DataLocation.Local);
++
++        Assert.That(clipboard.CanPasteNote(2, DataLocation.Local), Is.False);
++        Assert.That(clipboard.PasteNote(1, DataLocation.Remote), Is.Null);
++        Assert.That(clipboard.PasteNote(1, DataLocation.Local)!.Content, Is.EqualTo("**texto**"));
++        Assert.That(clipboard.CanPasteTask(1, DataLocation.Local), Is.False);
++    }
++
++    [Test]
++    public void HabitCopy_PreservesFrequencyButNotHistory()
++    {
++        ContentClipboard clipboard = new();
++        HabitModel original = new()
++        {
++            Title = "Exercício",
++            RepeatCount = 3,
++            RepeatInterval = 2,
++            RepeatPeriod = Period.Week,
++            LastTimeDoneAt = DateTime.Now,
++            TimesDone = [new TimeModel { StartedAt = DateTime.Now }],
++            Items = [new ItemModel { Title = "Aquecimento", DoneAt = DateTime.Now }]
++        };
++
++        clipboard.CopyHabit(original, 1, DataLocation.Local);
++        HabitModel pasted = clipboard.PasteHabit(1, DataLocation.Local)!;
++
++        Assert.Multiple(() =>
++        {
++            Assert.That(pasted.RepeatCount, Is.EqualTo(3));
++            Assert.That(pasted.RepeatInterval, Is.EqualTo(2));
++            Assert.That(pasted.RepeatPeriod, Is.EqualTo(Period.Week));
++            Assert.That(pasted.LastTimeDoneAt, Is.Null);
++            Assert.That(pasted.TimesDone, Is.Null);
++            Assert.That(pasted.Items![0].DoneAt, Is.Null);
++        });
++    }
++}
+diff --git a/OpenHabitTracker/Data/Models/SettingsModel.cs b/OpenHabitTracker/Data/Models/SettingsModel.cs
+--- a/OpenHabitTracker/Data/Models/SettingsModel.cs
++++ b/OpenHabitTracker/Data/Models/SettingsModel.cs
+@@ -241,8 +241,8 @@ public static SettingsModel GetDefaultSettings(long userId)
+             SortBy = new()
+             {
+                 { ContentType.Note, Sort.Priority },
+-                { ContentType.Task, Sort.PlannedAt },
+-                { ContentType.Habit, Sort.SelectedRatio }
++                { ContentType.Task, Sort.Urgency },
++                { ContentType.Habit, Sort.Urgency }
+             }
+         };
+     }
+diff --git a/OpenHabitTracker/Data/Sort.cs b/OpenHabitTracker/Data/Sort.cs
+--- a/OpenHabitTracker/Data/Sort.cs
++++ b/OpenHabitTracker/Data/Sort.cs
+@@ -12,5 +12,6 @@ public enum Sort
+     TimeSpent,
+     AverageTimeSpent,
+     ElapsedTime,
+-    SelectedRatio
++    SelectedRatio,
++    Urgency
+ }
+diff --git a/OpenHabitTracker/Localization/Resources/en.json b/OpenHabitTracker/Localization/Resources/en.json
+--- a/OpenHabitTracker/Localization/Resources/en.json
++++ b/OpenHabitTracker/Localization/Resources/en.json
+@@ -21,12 +21,12 @@
+   "Trash": "Trash",
+   "Help": "Help",
+ 
+-  "Habits": "Habits",
++  "Habits": "Recurring tasks",
+   "Notes": "Notes",
+   "Tasks": "Tasks",
+ 
+   "Add new note": "Add new note",
+-  "Add new habit": "Add new habit",
++  "Add new habit": "Add recurring task",
+   "Add new task": "Add new task",
+ 
+   "Search...": "...",
+@@ -98,7 +98,7 @@
+   "Max days in small calendar": "Max days in small calendar",
+   "Auto": "Auto",
+   "Show large calendar": "Show large calendar",
+-  "Show habit statistics": "Show habit statistics",
++  "Show habit statistics": "Show recurring task statistics",
+   "Show category": "Show category",
+   "Show color": "Show color",
+   "Show created & updated": "Show created & updated",
+@@ -115,7 +115,7 @@
+   "Vertical space": "Vertical space",
+   "Insert tabs in note content": "Insert tabs in note content",
+   "Display note content as Markdown": "Display note content as Markdown",
+-  "Reset habit when it is completed": "Reset habit when it is completed",
++  "Reset habit when it is completed": "Reset recurring task when it is completed",
+   "Load examples": "Load examples",
+   "Delete all data": "Delete all data",
+   "Import / Export": "Import / Export",
+@@ -262,7 +262,7 @@
+ 
+   "Note title": "Note title",
+   "Task title": "Task title",
+-  "Habit title": "Habit title",
++  "Habit title": "Recurring task title",
+   "Duration hours": "Duration hours",
+   "Duration minutes": "Duration minutes",
+   "Repeat period": "Repeat period",
+@@ -273,9 +273,9 @@
+   "Done date comparison": "Done date comparison",
+   "Sort notes": "Sort notes",
+   "Sort tasks": "Sort tasks",
+-  "Sort habits": "Sort habits",
++  "Sort habits": "Sort recurring tasks",
+   "Edit item": "Edit item",
+-  "Edit habit": "Edit habit",
++  "Edit habit": "Edit recurring task",
+   "Edit note": "Edit note",
+   "Edit task": "Edit task",
+   "Calendar": "Calendar",
+@@ -298,8 +298,8 @@
+   "Done out of total": "{0} out of {1} done",
+   "Categories complete": "{0} out of {1} categories complete",
+   "Mark complete when": "Mark complete when",
+-  "all habits are done": "all habits are done",
+-  "any habit is done": "any habit is done",
++  "all habits are done": "all recurring tasks are done",
++  "any habit is done": "any recurring task is done",
+ 
+   "Current streak": "Current streak",
+   "Best streak": "Best streak",
+@@ -311,7 +311,7 @@
+   "Today": "Today",
+   "Nothing to show yet": "Nothing to show yet",
+   "Value of target": "{0} of {1}",
+-  "Show habit charts": "Show habit charts",
++  "Show habit charts": "Show recurring task charts",
+   "Days": "Days",
+   "Weeks": "Weeks",
+   "Months": "Months",
+@@ -332,10 +332,10 @@
+   "Remind hours": "Remind hours",
+   "Remind minutes": "Remind minutes",
+   "Remind before a planned task": "Remind before a planned task",
+-  "Tasks and habits": "Tasks and habits",
++  "Tasks and habits": "Tasks and recurring tasks",
+   "Notify only from priority": "Notify only from priority",
+   "Any priority": "Any priority",
+-  "Notify about habits over": "Notify about habits over",
++  "Notify about habits over": "Notify about recurring tasks over",
+   "Include overdue tasks": "Include overdue tasks",
+   "Due today": "Due today",
+   "Daily summary": "Daily summary",
+@@ -348,5 +348,17 @@
+   "Exact notification timing": "Exact notification timing",
+   "Open alarms & reminders": "Open alarms & reminders",
+   "On": "On",
+-  "Off": "Off"
++  "Off": "Off",
++  "Habit": "Recurring task",
++  "Copy": "Copy",
++  "Paste": "Paste",
++  "Urgency": "Urgency",
++  "Soon": "Soon",
++  "Your overview": "Your overview",
++  "Open tasks": "Open tasks",
++  "Overdue tasks": "Overdue tasks",
++  "Recurring tasks": "Recurring tasks",
++  "Notes ready": "Notes",
++  "Reminders": "Reminders",
++  "Enable reminders in Settings": "Enable reminders in Settings"
+ }
+diff --git a/OpenHabitTracker/Localization/Resources/pt.json b/OpenHabitTracker/Localization/Resources/pt.json
+--- a/OpenHabitTracker/Localization/Resources/pt.json
++++ b/OpenHabitTracker/Localization/Resources/pt.json
+@@ -21,12 +21,12 @@
+   "Trash": "Lixo",
+   "Help": "Ajuda",
+ 
+-  "Habits": "Hábitos",
++  "Habits": "Tarefas recorrentes",
+   "Notes": "Notas",
+   "Tasks": "Tarefas",
+ 
+   "Add new note": "Adicionar nota",
+-  "Add new habit": "Adicionar hábito",
++  "Add new habit": "Adicionar tarefa recorrente",
+   "Add new task": "Adicionar tarefa",
+ 
+   "Search...": "...",
+@@ -98,7 +98,7 @@
+   "Max days in small calendar": "Máx. de dias no calendário pequeno",
+   "Auto": "Automático",
+   "Show large calendar": "Mostrar calendário grande",
+-  "Show habit statistics": "Mostrar estatísticas",
++  "Show habit statistics": "Mostrar estatísticas das tarefas recorrentes",
+   "Show category": "Mostrar categoria",
+   "Show color": "Mostrar cor",
+   "Show created & updated": "Mostrar criado e atualizado",
+@@ -115,7 +115,7 @@
+   "Vertical space": "Espaço vertical",
+   "Insert tabs in note content": "Inserir tabulações nas notas",
+   "Display note content as Markdown": "Exibir notas como Markdown",
+-  "Reset habit when it is completed": "Reiniciar hábito ao concluir",
++  "Reset habit when it is completed": "Reiniciar tarefa recorrente ao concluir",
+   "Load examples": "Carregar exemplos",
+   "Delete all data": "Eliminar todos os dados",
+   "Import / Export": "Importar / Exportar",
+@@ -262,7 +262,7 @@
+ 
+   "Note title": "Título da nota",
+   "Task title": "Título da tarefa",
+-  "Habit title": "Título do hábito",
++  "Habit title": "Título da tarefa recorrente",
+   "Duration hours": "Horas de duração",
+   "Duration minutes": "Minutos de duração",
+   "Repeat period": "Período de repetição",
+@@ -273,9 +273,9 @@
+   "Done date comparison": "Comparação de data de conclusão",
+   "Sort notes": "Ordenar notas",
+   "Sort tasks": "Ordenar tarefas",
+-  "Sort habits": "Ordenar hábitos",
++  "Sort habits": "Ordenar tarefas recorrentes",
+   "Edit item": "Editar item",
+-  "Edit habit": "Editar hábito",
++  "Edit habit": "Editar tarefa recorrente",
+   "Edit note": "Editar nota",
+   "Edit task": "Editar tarefa",
+   "Calendar": "Calendário",
+@@ -287,7 +287,7 @@
+ 
+   "This week": "Esta semana",
+   "out of": "de",
+-  "Overdue": "Atrasadas",
++  "Overdue": "Atrasada",
+   "done": "feitas",
+   "planned": "planeadas",
+   "Last done": "Último feito",
+@@ -298,8 +298,8 @@
+   "Done out of total": "{0} de {1} feitas",
+   "Categories complete": "{0} de {1} categorias completas",
+   "Mark complete when": "Marcar como completo quando",
+-  "all habits are done": "todos os hábitos estão concluídos",
+-  "any habit is done": "algum hábito está concluído",
++  "all habits are done": "todas as tarefas recorrentes estão concluídas",
++  "any habit is done": "alguma tarefa recorrente está concluída",
+ 
+   "Current streak": "Sequência atual",
+   "Best streak": "Melhor sequência",
+@@ -311,7 +311,7 @@
+   "Today": "Hoje",
+   "Nothing to show yet": "Ainda não há nada para mostrar",
+   "Value of target": "{0} de {1}",
+-  "Show habit charts": "Mostrar gráficos",
++  "Show habit charts": "Mostrar gráficos das tarefas recorrentes",
+   "Days": "Dias",
+   "Weeks": "Semanas",
+   "Months": "Meses",
+@@ -332,10 +332,10 @@
+   "Remind hours": "Horas do lembrete",
+   "Remind minutes": "Minutos do lembrete",
+   "Remind before a planned task": "Lembrar antes de uma tarefa planeada",
+-  "Tasks and habits": "Tarefas e hábitos",
++  "Tasks and habits": "Tarefas e tarefas recorrentes",
+   "Notify only from priority": "Notificar apenas a partir da prioridade",
+   "Any priority": "Qualquer prioridade",
+-  "Notify about habits over": "Notificar sobre hábitos acima de",
++  "Notify about habits over": "Notificar tarefas recorrentes com urgência acima de",
+   "Include overdue tasks": "Incluir tarefas atrasadas",
+   "Due today": "Para hoje",
+   "Daily summary": "Resumo diário",
+@@ -348,5 +348,17 @@
+   "Exact notification timing": "Hora exata das notificações",
+   "Open alarms & reminders": "Abrir Alarmes e lembretes",
+   "On": "Ativada",
+-  "Off": "Desativada"
++  "Off": "Desativada",
++  "Habit": "Tarefa recorrente",
++  "Copy": "Copiar",
++  "Paste": "Colar",
++  "Urgency": "Urgência",
++  "Soon": "Em breve",
++  "Your overview": "Visão geral",
++  "Open tasks": "Tarefas pendentes",
++  "Overdue tasks": "Tarefas atrasadas",
++  "Recurring tasks": "Tarefas recorrentes",
++  "Notes ready": "Notas",
++  "Reminders": "Lembretes",
++  "Enable reminders in Settings": "Ative os lembretes nas configurações"
+ }
+diff --git a/OpenHabitTracker/Query/QueryExtensions.cs b/OpenHabitTracker/Query/QueryExtensions.cs
+--- a/OpenHabitTracker/Query/QueryExtensions.cs
++++ b/OpenHabitTracker/Query/QueryExtensions.cs
+@@ -131,6 +131,7 @@ x.CompletedAt is DateTime completedAt &&
+             Sort.Duration => tasks.OrderBy(x => x.Duration),
+             Sort.ElapsedTime => tasks.OrderBy(x => x.CompletedAt),
+             Sort.PlannedAt => tasks.OrderBy(x => x.PlannedAt),
++            Sort.Urgency => UrgencyOrder.OrderTasks(tasks, DateTime.Now),
+             Sort.TimeSpent => tasks.OrderBy(x => x.TimeSpent),
+             _ => tasks
+         };
+@@ -216,6 +217,7 @@ t.CompletedAt is DateTime completedAt &&
+             Sort.AverageTimeSpent => habits.OrderBy(x => x.AverageTimeSpent),
+             Sort.ElapsedTime => habits.OrderBy(x => x.LastTimeDoneAt),
+             Sort.SelectedRatio => habits.OrderByDescending(x => x.GetRatio(queryParameters.SelectedRatio)),
++            Sort.Urgency => UrgencyOrder.OrderHabits(habits, queryParameters.SelectedRatio),
+             _ => habits
+         };
+     }
+diff --git a/OpenHabitTracker/Query/UrgencyOrder.cs b/OpenHabitTracker/Query/UrgencyOrder.cs
+new file mode 100644
+--- /dev/null
++++ b/OpenHabitTracker/Query/UrgencyOrder.cs
+@@ -0,0 +1,43 @@
++using OpenHabitTracker.Data;
++using OpenHabitTracker.Data.Models;
++
++namespace OpenHabitTracker.Query;
++
++/// <summary>
++/// Tasks: overdue, today, within three days, later, unscheduled, completed.
++/// Higher priority breaks ties within each urgency bucket.
++/// Recurring tasks: most overdue relative to their expected interval first.
++/// </summary>
++public static class UrgencyOrder
++{
++    public enum TaskBucket { Overdue, Today, Soon, Later, Unscheduled, Completed }
++
++    public static TaskBucket GetTaskBucket(TaskModel task, DateTime now)
++    {
++        if (task.CompletedAt is not null)
++            return TaskBucket.Completed;
++
++        if (task.PlannedAt is not DateTime date)
++            return TaskBucket.Unscheduled;
++
++        // Today's date-only tasks have a 23:59:59 sentinel, so they stay due today.
++        if (date < now && (!task.IsPlannedDateOnly || date.Date < now.Date))
++            return TaskBucket.Overdue;
++
++        int days = (date.Date - now.Date).Days;
++        return days <= 0 ? TaskBucket.Today : days <= 3 ? TaskBucket.Soon : TaskBucket.Later;
++    }
++
++    public static IEnumerable<TaskModel> OrderTasks(IEnumerable<TaskModel> tasks, DateTime now)
++        => tasks.OrderBy(task => GetTaskBucket(task, now))
++            .ThenByDescending(task => task.Priority)
++            .ThenBy(task => task.PlannedAt ?? DateTime.MaxValue)
++            .ThenBy(task => task.Title, StringComparer.CurrentCultureIgnoreCase);
++
++    public static IEnumerable<HabitModel> OrderHabits(IEnumerable<HabitModel> habits, Ratio ratio)
++        => habits.OrderByDescending(habit => SafeRatio(habit.GetRatio(ratio)))
++            .ThenByDescending(habit => habit.Priority)
++            .ThenBy(habit => habit.Title, StringComparer.CurrentCultureIgnoreCase);
++
++    private static double SafeRatio(double value) => double.IsFinite(value) ? value : 0;
++}
+diff --git a/OpenHabitTracker/Services/ContentClipboard.cs b/OpenHabitTracker/Services/ContentClipboard.cs
+new file mode 100644
+--- /dev/null
++++ b/OpenHabitTracker/Services/ContentClipboard.cs
+@@ -0,0 +1,84 @@
++using OpenHabitTracker.Data;
++using OpenHabitTracker.Data.Models;
++
++namespace OpenHabitTracker.Services;
++
++/// <summary>
++/// An in-app clipboard for duplicating content. Copies are detached snapshots and
++/// can only be pasted into the same account and data location that copied them.
++/// It never stores existing entity IDs, completions, or history in the new model.
++/// </summary>
++public sealed class ContentClipboard
++{
++    private sealed record Entry<T>(T Model, long UserId, DataLocation Location);
++
++    private Entry<TaskModel>? _task;
++    private Entry<NoteModel>? _note;
++    private Entry<HabitModel>? _habit;
++
++    public bool CanPasteTask(long userId, DataLocation location) => Matches(_task, userId, location);
++    public bool CanPasteNote(long userId, DataLocation location) => Matches(_note, userId, location);
++    public bool CanPasteHabit(long userId, DataLocation location) => Matches(_habit, userId, location);
++
++    private static bool Matches<T>(Entry<T>? entry, long userId, DataLocation location)
++        => entry is not null && entry.UserId == userId && entry.Location == location;
++
++    public void CopyTask(TaskModel source, long userId, DataLocation location)
++        => _task = new(CloneTask(source), userId, location);
++
++    public void CopyNote(NoteModel source, long userId, DataLocation location)
++        => _note = new(CloneNote(source), userId, location);
++
++    public void CopyHabit(HabitModel source, long userId, DataLocation location)
++        => _habit = new(CloneHabit(source), userId, location);
++
++    public TaskModel? PasteTask(long userId, DataLocation location)
++        => CanPasteTask(userId, location) ? CloneTask(_task!.Model) : null;
++
++    public NoteModel? PasteNote(long userId, DataLocation location)
++        => CanPasteNote(userId, location) ? CloneNote(_note!.Model) : null;
++
++    public HabitModel? PasteHabit(long userId, DataLocation location)
++        => CanPasteHabit(userId, location) ? CloneHabit(_habit!.Model) : null;
++
++    private static TaskModel CloneTask(TaskModel source) => new()
++    {
++        Title = source.Title,
++        Priority = source.Priority,
++        Color = source.Color,
++        CategoryId = source.CategoryId,
++        Duration = source.Duration,
++        PlannedAt = source.PlannedAt,
++        Items = CloneItems(source.Items)
++        // StartedAt / CompletedAt deliberately not copied.
++    };
++
++    private static NoteModel CloneNote(NoteModel source) => new()
++    {
++        Title = source.Title,
++        Content = source.Content,
++        Priority = source.Priority,
++        Color = source.Color,
++        CategoryId = source.CategoryId
++    };
++
++    private static HabitModel CloneHabit(HabitModel source) => new()
++    {
++        Title = source.Title,
++        Priority = source.Priority,
++        Color = source.Color,
++        CategoryId = source.CategoryId,
++        RepeatCount = source.RepeatCount,
++        RepeatInterval = source.RepeatInterval,
++        RepeatPeriod = source.RepeatPeriod,
++        DisplayMetric = source.DisplayMetric,
++        TargetQuantity = source.TargetQuantity,
++        Duration = source.Duration,
++        StartAt = source.StartAt,
++        Items = CloneItems(source.Items)
++        // TimesDone / LastTimeDoneAt are intentionally not copied.
++    };
++
++    private static List<ItemModel>? CloneItems(List<ItemModel>? source)
++        => source?.Select(item => new ItemModel { Title = item.Title }).ToList();
++}
+diff --git a/OpenHabitTracker/Services/CopiedItemPersistence.cs b/OpenHabitTracker/Services/CopiedItemPersistence.cs
+new file mode 100644
+--- /dev/null
++++ b/OpenHabitTracker/Services/CopiedItemPersistence.cs
+@@ -0,0 +1,40 @@
++using OpenHabitTracker.App;
++using OpenHabitTracker.Data;
++using OpenHabitTracker.Data.Entities;
++using OpenHabitTracker.Data.Models;
++
++namespace OpenHabitTracker.Services;
++
++/// <summary>
++/// Saves the detached checklist of a newly created task/recurring task only.
++/// Existing items are never updated or deleted by duplication.
++/// </summary>
++internal static class CopiedItemPersistence
++{
++    public static async Task SaveNewItems(ClientState clientState, ItemsModel parent)
++    {
++        if (parent.Items is not { Count: > 0 })
++            return;
++
++        // Create the whole checklist first. New IDs and owner bookkeeping are
++        // established only after the database assigned each one.
++        foreach (ItemModel item in parent.Items)
++        {
++            ItemEntity copy = new()
++            {
++                ParentId = parent.Id,
++                Title = item.Title,
++                DoneAt = null
++            };
++
++            await clientState.DataAccess.AddItem(copy);
++
++            item.Id = copy.Id;
++            item.ParentId = parent.Id;
++            item.DoneAt = null;
++
++            clientState.Items ??= new();
++            clientState.Items[item.Id] = item;
++        }
++    }
++}
+diff --git a/OpenHabitTracker/Services/HabitService.cs b/OpenHabitTracker/Services/HabitService.cs
+--- a/OpenHabitTracker/Services/HabitService.cs
++++ b/OpenHabitTracker/Services/HabitService.cs
+@@ -116,6 +116,9 @@ public async Task AddHabit()
+ 
+         NewHabit.Id = habit.Id;
+ 
++        // Duplicates preserve their checklist, not the completion history or item IDs.
++        await CopiedItemPersistence.SaveNewItems(_clientState, NewHabit);
++
+         _clientState.Habits.Add(NewHabit.Id, NewHabit);
+ 
+         if (NewHabit.CategoryId != 0 && _clientState.Categories?.TryGetValue(NewHabit.CategoryId, out CategoryModel? habitCategory) == true)
+diff --git a/OpenHabitTracker/Services/TaskService.cs b/OpenHabitTracker/Services/TaskService.cs
+--- a/OpenHabitTracker/Services/TaskService.cs
++++ b/OpenHabitTracker/Services/TaskService.cs
+@@ -60,6 +60,9 @@ public async Task AddTask()
+ 
+         NewTask.Id = task.Id;
+ 
++        // New items copied from another task must be inserted with fresh IDs.
++        await CopiedItemPersistence.SaveNewItems(_clientState, NewTask);
++
+         _clientState.Tasks.Add(NewTask.Id, NewTask);
+ 
+         if (NewTask.CategoryId != 0 && _clientState.Categories?.TryGetValue(NewTask.CategoryId, out CategoryModel? taskCategory) == true)
+diff --git a/OpenHabitTracker/Startup.cs b/OpenHabitTracker/Startup.cs
+--- a/OpenHabitTracker/Startup.cs
++++ b/OpenHabitTracker/Startup.cs
+@@ -41,6 +41,7 @@ private static void AddDefaultServices(IServiceCollection services)
+         services.AddScoped<IPriorityService, PriorityService>();
+         services.AddScoped<IHabitService, HabitService>();
+         services.AddScoped<IItemService, ItemService>();
++        services.AddScoped<ContentClipboard>();
+         services.AddScoped<INoteService, NoteService>();
+         services.AddScoped<ITaskService, TaskService>();
+         services.AddScoped<ITrashService, TrashService>();
+diff --git a/UPGRADE.pt-BR.md b/UPGRADE.pt-BR.md
+new file mode 100644
+--- /dev/null
++++ b/UPGRADE.pt-BR.md
+@@ -0,0 +1,129 @@
++# Atualização segura do OpenHabitTracker pessoal — Linux
++
++O patch desta versão modifica UI, ordenação e ações de copiar/colar; **não remove
++dados, não adiciona migrações de banco, não renomeia tabelas e não altera o
++identificador do aplicativo**. Os nomes `Habit` e `Habits` permanecem na
++persistência e no código, aparecendo como “Tarefas recorrentes” na UI.
++**A ausência de migração neste patch não garante compatibilidade com versões
++instaladas mais antigas que o commit-base do fork**: faça backup antes.
++
++## 1. Identificar a instalação
++
++```bash
++flatpak info net.openhabittracker.OpenHabitTracker 2>/dev/null || true
++snap list openhabittracker 2>/dev/null || true
++command -v OpenHT || true
++```
++
++Se o aplicativo é **web/PWA**, o banco é **IndexedDB do navegador**; o
++script de SQLite não serve. Use o comando de exportação do próprio app
++(Data → Export) para salvar **JSON** antes de trocar de origem, navegador ou PWA.
++Não limpe os dados do site, não remova o perfil e não troque a origem.
++
++## 2. Backup verificado antes de qualquer instalação
++
++Feche o OpenHabitTracker e, na pasta do checkout desta branch, execute:
++
++```bash
++python3 scripts/backup_openhabittracker.py --list
++python3 scripts/backup_openhabittracker.py
++```
++
++O script procura os diretórios nativos, Flatpak e Snap conhecidos. Se o banco
++estiver fora deles, passe `--database /CAMINHO/COMPLETO/OpenHT.db`.
++Ele faz backup consistente pelo SQLite, verifica `PRAGMA integrity_check`,
++salva um `manifest.json` com origem e contagem dos registros, e não escreve no
++arquivo original. Os backups ficam em `~/OpenHabitTracker-backups/`, com
++permissões restritas. **Não avance se o backup falhar.**
++
++Se usa sincronização remota, exporte também um JSON pelo app: o banco local pode
++não conter todos os dados hospedados no servidor.
++
++## 3. Aplicar o patch ao código-fonte
++
++Se estiver no fork na branch `personal/dev`, as alterações já estão presentes;
++não aplique o patch duas vezes. Em outra cópia na mesma base, use:
++
++```bash
++git apply --check OpenHabitTracker-pessoal.patch
++git apply OpenHabitTracker-pessoal.patch
++```
++
++O patch de código-fonte **não** modifica automaticamente o Flatpak, Snap,
++executável distribuído, nem o banco do aplicativo instalado.
++
++## 4. Atualizar sem alterar a localização dos dados
++
++### Flatpak
++
++**Importante:** atualizar o Flatpak exige recompilar usando o **mesmo ID**
++`net.openhabittracker.OpenHabitTracker`. Executar um binário nativo isolado
++criaria outra área de dados e pareceria que suas notas desapareceram.
++
++Com `flatpak-builder` e os runtimes/SDKs Flatpak instalados:
++
++```bash
++python3 scripts/make_local_flatpak_manifest.py
++flatpak-builder --user --install --install-deps-from=flathub --force-clean \
++  .flatpak-build net.openhabittracker.OpenHabitTracker.local.yaml
++flatpak run net.openhabittracker.OpenHabitTracker
++```
++
++O manifesto local usa **os arquivos deste checkout** e o mesmo ID. O manifesto
++original continua intocado. A instalação em escopo de usuário pode sobrepor
++uma instalação de sistema; não execute `flatpak uninstall --delete-data`.
++As dependências são baixadas durante a compilação; o processo depende da
++configuração Flatpak/Flathub no seu Linux.
++
++### Snap
++
++Mantenha o nome `openhabittracker` e o mesmo `SNAP_USER_COMMON`. Depois do
++backup, é possível construir o snap com `snapcraft`; a substituição de um snap
++instalado exige instalar o pacote localmente com as permissões necessárias.
++**Não remova o snap existente com `--purge`** e não copie o banco para a pasta
++de versão `~/snap/openhabittracker/<revisão>`. O caminho persistente é
++`~/snap/openhabittracker/common/OpenHT.db`.
++
++### Execução nativa (.NET/Photino)
++
++Compile com o .NET 10, e substitua os **binários** do aplicativo, não o banco:
++
++```bash
++dotnet publish OpenHabitTracker.Blazor.Photino/OpenHabitTracker.Blazor.Photino.csproj \
++  -c Release -f net10.0 -r linux-x64 --self-contained true \
++  -p:PublishSingleFile=true -o ./publish-personal
++```
++
++Para ARM64, troque `linux-x64` por `linux-arm64`. Instale o conteúdo de
++`publish-personal` no diretório de binários da sua instalação existente,
++guardando cópia da versão anterior. **Não substitua** o diretório de dados,
++por padrão `${XDG_DATA_HOME:-~/.local/share}/.OpenHabitTracker/`, nem
++`OpenHT.db`, arquivos `-wal` ou `-shm`.
++
++## 5. Verificar e reverter
++
++Abra a nova versão e confirme as contagens de notas, tarefas, recorrentes,
++categorias e históricos, além de abrir alguns itens com checklist. Teste
++fechar/reabrir. Se necessário, reinstale os binários anteriores e, somente
++se houve alteração indesejada no banco, restaure a cópia de `OpenHT-*.db`
++do backup identificado em `manifest.json`, **com o aplicativo fechado**,
++respeitando o caminho `source`. Nunca copie por cima de um banco aberto.
++
++## Lembretes
++
++O código original já oferece lembrete antecipado configurável, resumo diário
++e configurações de permissão. A nova barra com ícone de sino facilita o
++acesso. No Linux/Photino e no navegador, os avisos locais precisam que o
++aplicativo esteja aberto; este patch não promete agendamento com app fechado.
++
++## Validação
++
++A fonte de verdade dos dados continua sendo o `OpenHT.db` original. O patch
++não altera o modelo persistido, as entidades, o `DbContext`, nem cria nova
++migração. Ao compilar, execute:
++
++```bash
++dotnet test OpenHabitTracker.UnitTests/OpenHabitTracker.UnitTests.csproj
++```
++
++A suíte cobre também clonagem sem IDs/histórico e ordenação por urgência.
+diff --git a/scripts/backup_openhabittracker.py b/scripts/backup_openhabittracker.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/backup_openhabittracker.py
+@@ -0,0 +1,121 @@
++#!/usr/bin/env python3
++"""Consistent, read-only backup of OpenHabitTracker's local SQLite data (Linux)."""
++from __future__ import annotations
++
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import sqlite3
++import sys
++from datetime import datetime
++from urllib.parse import quote
++
++
++def candidates() -> list[Path]:
++    home = Path.home()
++    xdg = Path(os.environ.get("XDG_DATA_HOME", home / ".local/share"))
++    flatpak = home / ".var/app/net.openhabittracker.OpenHabitTracker"
++    return [
++        xdg / ".OpenHabitTracker/OpenHT.db",
++        home / ".local/share/.OpenHabitTracker/OpenHT.db",
++        flatpak / "data/.OpenHabitTracker/OpenHT.db",
++        flatpak / "data/OpenHT.db",
++        flatpak / "data/.local/share/.OpenHabitTracker/OpenHT.db",
++        home / "snap/openhabittracker/common/OpenHT.db",
++        home / "snap/openhabittracker/current/.local/share/.OpenHabitTracker/OpenHT.db",
++    ]
++
++
++def read_only(path: Path) -> sqlite3.Connection:
++    return sqlite3.connect(f"file:{quote(str(path), safe='/')}?mode=ro", uri=True, timeout=15)
++
++
++def database_counts(db: sqlite3.Connection) -> dict[str, int]:
++    existing = {row[0].lower() for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++    counts = {}
++    for name in ("Notes", "Tasks", "Habits", "Items", "Categories", "Times"):
++        if name.lower() in existing:
++            counts[name] = db.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
++    return counts
++
++
++def backup_one(source_path: Path, destination: Path) -> dict:
++    temporary = destination.with_suffix(".partial")
++    try:
++        source = read_only(source_path)
++        try:
++            target = sqlite3.connect(temporary)
++            try:
++                source.backup(target)
++            finally:
++                target.close()
++        finally:
++            source.close()
++
++        verified = read_only(temporary)
++        try:
++            check = verified.execute("PRAGMA integrity_check").fetchone()[0]
++            if check != "ok":
++                raise RuntimeError(f"Falha na integridade do backup: {check}")
++            counts = database_counts(verified)
++        finally:
++            verified.close()
++
++        temporary.replace(destination)
++        digest = hashlib.sha256()
++        with destination.open("rb") as input_file:
++            for chunk in iter(lambda: input_file.read(1024 * 1024), b""):
++                digest.update(chunk)
++        return {"source": str(source_path), "backup": str(destination), "sha256": digest.hexdigest(), "counts": counts}
++    finally:
++        temporary.unlink(missing_ok=True)
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description="Backup SQLite do OpenHabitTracker sem modificar o banco original.")
++    parser.add_argument("--database", action="append", type=Path, help="Caminho adicional ou específico do OpenHT.db")
++    parser.add_argument("--output", type=Path, default=Path.home() / "OpenHabitTracker-backups", help="Diretório dos backups")
++    parser.add_argument("--list", action="store_true", help="Apenas listar bancos encontrados; não criar backup")
++    args = parser.parse_args()
++
++    sources = args.database if args.database else candidates()
++    available = []
++    seen = set()
++    for path in sources:
++        path = path.expanduser().resolve()
++        if path.is_file() and path not in seen:
++            available.append(path)
++            seen.add(path)
++
++    if not available:
++        print("Nenhum OpenHT.db encontrado. Se usa a versão web, exporte os dados em JSON pelo aplicativo.", file=sys.stderr)
++        return 2
++
++    for source in available:
++        print(f"Banco identificado: {source}")
++    if args.list:
++        return 0
++
++    os.umask(0o077)
++    folder = args.output.expanduser() / ("backup-" + datetime.now().strftime("%Y%m%d-%H%M%S-%f"))
++    folder.mkdir(parents=True, exist_ok=False, mode=0o700)
++    records = []
++    try:
++        for index, source in enumerate(available, start=1):
++            destination = folder / f"OpenHT-{index}.db"
++            record = backup_one(source, destination)
++            records.append(record)
++            print(f"Backup verificado: {destination} | {record['counts']}")
++        manifest = {"created_at": datetime.now().isoformat(), "databases": records}
++        (folder / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
++        print(f"Backup concluído: {folder}")
++        return 0
++    except Exception as exc:
++        print(f"ERRO: backup incompleto. NENHUM banco de origem foi modificado. {exc}", file=sys.stderr)
++        return 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/scripts/make_local_flatpak_manifest.py b/scripts/make_local_flatpak_manifest.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/make_local_flatpak_manifest.py
+@@ -0,0 +1,19 @@
++#!/usr/bin/env python3
++"""Create a local-source Flatpak manifest without altering the upstream manifest."""
++from pathlib import Path
++
++root = Path(__file__).resolve().parents[1]
++source = root / "net.openhabittracker.OpenHabitTracker.yaml"
++destination = root / "net.openhabittracker.OpenHabitTracker.local.yaml"
++text = source.read_text(encoding="utf-8")
++before = """      - type: git
++        url: https://github.com/Jinjinov/OpenHabitTracker.git
++        tag: 1.2.5
++        commit: fff3bcd4bf9bd805e53aced0ae4c8d731cc2fc68"""
++after = """      - type: dir
++        path: ."""
++if text.count(before) != 1:
++    raise SystemExit("Manifesto mudou: revise a origem antes de compilar. Nenhum arquivo modificado.")
++destination.write_text(text.replace(before, after), encoding="utf-8")
++print(f"Manifesto local criado: {destination}")
++print("ID Flatpak preservado: net.openhabittracker.OpenHabitTracker")
