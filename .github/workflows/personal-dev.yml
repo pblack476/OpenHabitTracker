@@ -1,0 +1,37 @@
+name: Personal fork checks and Linux build
+
+on:
+  push:
+    branches: [personal/dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run unit tests
+        run: dotnet test OpenHabitTracker.UnitTests/OpenHabitTracker.UnitTests.csproj -c Release -m:1 -p:UseSharedCompilation=false
+
+      - name: Publish Linux x64
+        run: |
+          dotnet publish OpenHabitTracker.Blazor.Photino/OpenHabitTracker.Blazor.Photino.csproj \
+            -c Release -f net10.0 -r linux-x64 --self-contained true \
+            -p:PublishSingleFile=true -p:UseSharedCompilation=false -o publish-linux-x64
+
+      - name: Upload native Linux application
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenHabitTracker-personal-linux-x64
+          path: publish-linux-x64/
+          if-no-files-found: error
