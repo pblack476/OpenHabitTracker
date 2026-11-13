@@ -49,6 +49,7 @@ public class NoteComponentTests
         _ctx.Services.AddScoped(_ => clientState);
         _ctx.Services.AddScoped(_ => markdownToHtml);
         _ctx.Services.AddSingleton(loc);
+        _ctx.Services.AddScoped<ContentClipboard>();
         _ctx.Services.AddSingleton(Substitute.For<IGTourService>());
 
         _note = new NoteModel { Title = "My Note", Content = "**bold**", ContentMarkdown = "<strong>bold</strong>" };

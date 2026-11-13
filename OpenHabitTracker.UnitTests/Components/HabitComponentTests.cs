@@ -53,6 +53,7 @@ public class HabitComponentTests
         _ctx.Services.AddScoped(_ => _habitService);
         _ctx.Services.AddScoped(_ => _clientState);
         _ctx.Services.AddSingleton(loc);
+        _ctx.Services.AddScoped<ContentClipboard>();
         _ctx.Services.AddSingleton(Substitute.For<IGTourService>());
         _ctx.Services.AddSingleton(Substitute.For<IItemService>());
         _ctx.Services.AddSingleton(Substitute.For<ISearchFilterService>());
