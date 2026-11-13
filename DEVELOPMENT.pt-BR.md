@@ -8,9 +8,10 @@ Preparação iniciada em 13/11/2026 a partir do projeto
 A versão declarada nesse commit é `1.2.5`.
 
 A branch `personal/dev` é o ponto de trabalho para as adaptações pessoais.
-Esta preparação adiciona comandos de desenvolvimento e torna os caminhos do
-VS Code portáveis. As funcionalidades do aplicativo ainda são as do projeto
-original. A licença original está em `LICENSE`.
+Esta preparação adiciona comandos de desenvolvimento, torna os caminhos do
+VS Code portáveis e ajusta um teste de formatação para respeitar os dados
+culturais de cada plataforma. As funcionalidades do aplicativo ainda são as do
+projeto original. A licença original está em `LICENSE`.
 
 ## Requisitos
 
@@ -68,6 +69,28 @@ dotnet build OpenHabitTracker.Blazor.Web/OpenHabitTracker.Blazor.Web.csproj --co
 
 Os comandos restauram as dependências automaticamente. Os testes unitários
 incluem testes de componentes com bUnit.
+
+### Resultado da preparação em 13/11/2026
+
+Validação realizada em Linux x64 com SDK .NET `10.0.404`:
+
+- Núcleo, Backup, Blazor, Auth, API Client, EntityFrameworkCore, Blazor.Web e
+  UnitTests compilaram.
+- A suíte registrou 979 casos: 978 executados e aprovados, zero falhas e um
+  `NotExecuted` (`Read_AllDayReminder_PlansTheDateWithoutATime`).
+- O teste de preservação de cultura foi corrigido para capturar a formatação
+  original antes da chamada. A comparação continua exata, incluindo espaços
+  Unicode. O código de produção não precisou de alteração.
+- O build específico de WASM restaurou as dependências e compilou as bibliotecas,
+  mas não terminou: o MSBuild falhou ao criar/conectar o processo auxiliar de
+  `ComputeWasmBuildAssets` (`MSB4216`, seguido de `MSB4027`). Esse alvo ainda
+  precisa de validação completa em um ambiente onde o processo auxiliar execute.
+- A execução gráfica do Photino e os testes de interface não foram validados.
+
+Neste executor, a inicialização multiprocessada padrão do MSBuild falhou com
+`SocketException (13): Permission denied`. A suíte de testes conseguiu executar
+em modo serial, com `DOTNET_CLI_USE_MSBUILD_SERVER=0` e as opções `-m:1 -nr:false
+-p:UseSharedCompilation=false`. Essas opções não resolveram o build WASM.
 
 Os testes de interface em `OpenHabitTracker.EndToEndTests` exigem uma aplicação
 já em execução. Na base original, `BaseTest.cs` usa `http://localhost` na porta

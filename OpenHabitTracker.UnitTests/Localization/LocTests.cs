@@ -11,10 +11,15 @@ public class LocTests
     [Test]
     public void CreateFormattingCulture_NoPatterns_KeepsTheLanguagesOwn()
     {
-        CultureInfo culture = Loc.CreateFormattingCulture(new CultureInfo("en"), null, null);
+        CultureInfo language = new("en");
+        // Culture data can use different separators on different platforms.
+        string expectedDate = _sample.ToString("d", language);
+        string expectedTime = _sample.ToString("t", language);
 
-        Assert.That(_sample.ToString("d", culture), Is.EqualTo("1/5/2026"));
-        Assert.That(_sample.ToString("t", culture), Is.EqualTo("1:05 PM"));
+        CultureInfo culture = Loc.CreateFormattingCulture(language, null, null);
+
+        Assert.That(_sample.ToString("d", culture), Is.EqualTo(expectedDate));
+        Assert.That(_sample.ToString("t", culture), Is.EqualTo(expectedTime));
     }
 
     [Test]
