@@ -20,15 +20,12 @@
   "Priorities": "優先度",
   "Trash": "ゴミ箱",
   "Help": "ヘルプ",
-
-  "Habits": "習慣",
+  "Habits": "繰り返しタスク",
   "Notes": "メモ",
   "Tasks": "タスク",
-
   "Add new note": "メモを追加",
-  "Add new habit": "習慣を追加",
+  "Add new habit": "繰り返しタスクを追加",
   "Add new task": "タスクを追加",
-
   "Search...": "...",
   "Search": "検索",
   "Filter": "絞り込み",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "習慣間隔比率",
   "Show only habits with interval ratio over": "間隔比率が以上の習慣のみ表示",
   "Show only habits with interval ratio under": "間隔比率が以下の習慣のみ表示",
-
   "Day": "日",
   "Week": "週",
   "Month": "月",
@@ -203,7 +199,6 @@
   "Elapsed time": "経過時間",
   "Time spent": "所要時間",
   "Selected interval ratio": "選択した間隔比率",
-
   "Previous week": "前の週",
   "Previous month": "前の月",
   "Next month": "次の月",
@@ -226,7 +221,6 @@
   "Clear search": "検索をクリア",
   "Clear planned date": "予定日をクリア",
   "Clear done date": "完了日をクリア",
-
   "Planned within days from today": "予定: 今日からの日数以内",
   "Done within days from today": "完了: 今日からの日数以内",
   "Not done within days from today": "未完了: 今日からの日数以内",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "完了: 今日からの最も遅い日",
   "Clear planned range": "予定範囲をクリア",
   "Clear done range": "完了範囲をクリア",
-
   "Version": "バージョン",
   "OpenHabitTracker on GitHub": "GitHubのOpenHabitTracker",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Windows、Linux、Android、iOS、macOS、Webで利用可能",
-
   "Contact": "お問い合わせ",
   "Report a bug or request a feature": "バグ報告・機能リクエスト",
   "Ask a question": "質問する",
   "Post in r/OpenHabitTracker": "r/OpenHabitTrackerに投稿",
   "Message me on Reddit": "Redditでメッセージを送る",
-
   "Privacy": "プライバシー",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "あなたのデータ（メモ、タスク、習慣）をデバイスに保存し、完全なプライバシーを提供します。",
   "It allows you to delete the data stored on your device at any time.": "デバイスに保存されたデータをいつでも削除できます。",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "6つのプラットフォームで利用可能で、一部ではGoogle Driveにバックアップできます。",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Google Driveへのバックアップを許可すると、メールを受け取り、名前はデバイス上にのみ表示されます。",
   "You can read the privacy policy at": "プライバシーポリシーはこちら：",
-
   "Main navigation": "メインナビゲーション",
   "Main content": "メインコンテンツ",
-
   "Note title": "メモのタイトル",
   "Task title": "タスクのタイトル",
-  "Habit title": "習慣のタイトル",
+  "Habit title": "繰り返しタスクのタイトル",
   "Duration hours": "所要時間（時）",
   "Duration minutes": "所要時間（分）",
   "Repeat period": "繰り返し期間",
@@ -273,18 +262,16 @@
   "Done date comparison": "完了日の比較",
   "Sort notes": "メモを並べ替え",
   "Sort tasks": "タスクを並べ替え",
-  "Sort habits": "習慣を並べ替え",
+  "Sort habits": "繰り返しタスクを並べ替え",
   "Edit item": "項目を編集",
-  "Edit habit": "習慣を編集",
+  "Edit habit": "繰り返しタスクを編集",
   "Edit note": "メモを編集",
   "Edit task": "タスクを編集",
   "Calendar": "カレンダー",
   "times done": "回完了",
-
   "Group by category": "カテゴリでグループ化",
   "Show last done time": "最終完了時刻を表示",
   "Uncategorized": "未分類",
-
   "This week": "今週",
   "out of": "/",
   "Overdue": "期限超過",
@@ -300,7 +287,6 @@
   "Mark complete when": "完了条件",
   "all habits are done": "すべての習慣が完了",
   "any habit is done": "いずれかの習慣が完了",
-
   "Current streak": "現在のストリーク",
   "Best streak": "最高ストリーク",
   "Target": "目標",
@@ -316,7 +302,6 @@
   "Weeks": "週",
   "Months": "ヶ月",
   "Years": "年",
-
   "Display": "表示",
   "Repetitions": "繰り返し",
   "Time": "時間",
@@ -348,5 +333,17 @@
   "Exact notification timing": "正確な通知時刻",
   "Open alarms & reminders": "アラームとリマインダーを開く",
   "On": "オン",
-  "Off": "オフ"
+  "Off": "オフ",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }

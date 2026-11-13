@@ -20,15 +20,12 @@
   "Priorities": "Priority",
   "Trash": "Koš",
   "Help": "Nápověda",
-
-  "Habits": "Návyky",
+  "Habits": "Opakované úkoly",
   "Notes": "Poznámky",
   "Tasks": "Úkoly",
-
   "Add new note": "Přidat novou poznámku",
-  "Add new habit": "Přidat nový návyk",
+  "Add new habit": "Přidat opakovaný úkol",
   "Add new task": "Přidat nový úkol",
-
   "Search...": "...",
   "Search": "Hledat",
   "Filter": "Filtrovat",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Poměr intervalu návyku",
   "Show only habits with interval ratio over": "Zobrazit pouze návyky s poměrem intervalu nad",
   "Show only habits with interval ratio under": "Zobrazit pouze návyky s poměrem intervalu pod",
-
   "Day": "Den",
   "Week": "Týden",
   "Month": "Měsíc",
@@ -203,7 +199,6 @@
   "Elapsed time": "Uplynulý čas",
   "Time spent": "Strávený čas",
   "Selected interval ratio": "Vybraný poměr intervalu",
-
   "Previous week": "Předchozí týden",
   "Previous month": "Předchozí měsíc",
   "Next month": "Příští měsíc",
@@ -226,7 +221,6 @@
   "Clear search": "Vymazat hledání",
   "Clear planned date": "Vymazat plánované datum",
   "Clear done date": "Vymazat datum dokončení",
-
   "Planned within days from today": "Naplánováno v rozmezí dnů ode dneška",
   "Done within days from today": "Dokončeno v rozmezí dnů ode dneška",
   "Not done within days from today": "Nedokončeno v rozmezí dnů ode dneška",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Dokončeno: nejvzdálenější den ode dneška",
   "Clear planned range": "Vymazat plánovaný rozsah",
   "Clear done range": "Vymazat rozsah dokončení",
-
   "Version": "Verze",
   "OpenHabitTracker on GitHub": "OpenHabitTracker na GitHubu",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "K dispozici pro Windows, Linux, Android, iOS, macOS a jako webová aplikace",
-
   "Contact": "Kontakt",
   "Report a bug or request a feature": "Nahlaste chybu nebo navrhněte funkci",
   "Ask a question": "Položte dotaz",
   "Post in r/OpenHabitTracker": "Přispějte do r/OpenHabitTracker",
   "Message me on Reddit": "Napište mi na Redditu",
-
   "Privacy": "Soukromí",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "ukládá vaše data (poznámky, úkoly a návyky) na vašem zařízení a nabízí vám úplné soukromí.",
   "It allows you to delete the data stored on your device at any time.": "Umožňuje kdykoli smazat data uložená na vašem zařízení.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Je k dispozici na 6 platformách a na některých platformách může zálohovat vaše data na váš Disk Google.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Pokud povolíte zálohování dat na Disk Google, aplikace obdrží váš e-mail a zobrazí vaše jméno pouze na vašem zařízení.",
   "You can read the privacy policy at": "Zásady ochrany osobních údajů si můžete přečíst na",
-
   "Main navigation": "Hlavní navigace",
   "Main content": "Hlavní obsah",
-
   "Note title": "Název poznámky",
   "Task title": "Název úkolu",
-  "Habit title": "Název návyku",
+  "Habit title": "Název opakovaného úkolu",
   "Duration hours": "Hodiny trvání",
   "Duration minutes": "Minuty trvání",
   "Repeat period": "Období opakování",
@@ -273,18 +262,16 @@
   "Done date comparison": "Porovnání data dokončení",
   "Sort notes": "Třídit poznámky",
   "Sort tasks": "Třídit úkoly",
-  "Sort habits": "Třídit návyky",
+  "Sort habits": "Seřadit opakované úkoly",
   "Edit item": "Upravit položku",
-  "Edit habit": "Upravit návyk",
+  "Edit habit": "Upravit opakovaný úkol",
   "Edit note": "Upravit poznámku",
   "Edit task": "Upravit úkol",
   "Calendar": "Kalendář",
   "times done": "krát hotovo",
-
   "Group by category": "Seskupit podle kategorie",
   "Show last done time": "Zobrazit čas posledního dokončení",
   "Uncategorized": "Bez kategorie",
-
   "This week": "Tento týden",
   "out of": "z",
   "Overdue": "Po termínu",
@@ -300,7 +287,6 @@
   "Mark complete when": "Označit jako dokončené když",
   "all habits are done": "všechny návyky jsou splněny",
   "any habit is done": "některý návyk je splněn",
-
   "Current streak": "Aktuální série",
   "Best streak": "Nejlepší série",
   "Target": "Cíl",
@@ -316,7 +302,6 @@
   "Weeks": "Týdnů",
   "Months": "Měsíců",
   "Years": "Let",
-
   "Display": "Zobrazení",
   "Repetitions": "Opakování",
   "Time": "Čas",
@@ -348,5 +333,17 @@
   "Exact notification timing": "Přesný čas oznámení",
   "Open alarms & reminders": "Otevřít Budíky a připomenutí",
   "On": "Zapnuto",
-  "Off": "Vypnuto"
+  "Off": "Vypnuto",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }

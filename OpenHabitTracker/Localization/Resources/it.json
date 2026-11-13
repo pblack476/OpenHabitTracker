@@ -20,15 +20,12 @@
   "Priorities": "Priorità",
   "Trash": "Cestino",
   "Help": "Aiuto",
-
-  "Habits": "Abitudini",
+  "Habits": "Attività ricorrenti",
   "Notes": "Note",
   "Tasks": "Compiti",
-
   "Add new note": "Aggiungi nota",
-  "Add new habit": "Aggiungi abitudine",
+  "Add new habit": "Aggiungi attività ricorrente",
   "Add new task": "Aggiungi compito",
-
   "Search...": "...",
   "Search": "Cerca",
   "Filter": "Filtra",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Rapporto intervallo abitudine",
   "Show only habits with interval ratio over": "Mostra solo abitudini con rapporto >",
   "Show only habits with interval ratio under": "Mostra solo abitudini con rapporto <",
-
   "Day": "Giorno",
   "Week": "Settimana",
   "Month": "Mese",
@@ -203,7 +199,6 @@
   "Elapsed time": "Tempo trascorso",
   "Time spent": "Tempo speso",
   "Selected interval ratio": "Rapporto intervallo selezionato",
-
   "Previous week": "Settimana precedente",
   "Previous month": "Mese precedente",
   "Next month": "Mese successivo",
@@ -226,7 +221,6 @@
   "Clear search": "Cancella ricerca",
   "Clear planned date": "Cancella data pianificata",
   "Clear done date": "Cancella data di completamento",
-
   "Planned within days from today": "Pianificato entro giorni da oggi",
   "Done within days from today": "Completato entro giorni da oggi",
   "Not done within days from today": "Non completato entro giorni da oggi",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Completato: giorno più lontano da oggi",
   "Clear planned range": "Cancella intervallo pianificato",
   "Clear done range": "Cancella intervallo di completamento",
-
   "Version": "Versione",
   "OpenHabitTracker on GitHub": "OpenHabitTracker su GitHub",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Disponibile su Windows, Linux, Android, iOS, macOS e web",
-
   "Contact": "Contatti",
   "Report a bug or request a feature": "Segnala un bug o richiedi una funzione",
   "Ask a question": "Fai una domanda",
   "Post in r/OpenHabitTracker": "Pubblica su r/OpenHabitTracker",
   "Message me on Reddit": "Scrivimi su Reddit",
-
   "Privacy": "Privacy",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "salva i tuoi dati (note, compiti e abitudini) sul tuo dispositivo, garantendo la massima privacy.",
   "It allows you to delete the data stored on your device at any time.": "Puoi eliminare i dati archiviati sul dispositivo in qualsiasi momento.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Disponibile su 6 piattaforme e su alcune può eseguire il backup su Google Drive.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Se autorizzi il backup su Google Drive, riceverà la tua email e mostrerà il tuo nome solo sul tuo dispositivo.",
   "You can read the privacy policy at": "Puoi leggere l'informativa sulla privacy su",
-
   "Main navigation": "Navigazione principale",
   "Main content": "Contenuto principale",
-
   "Note title": "Titolo della nota",
   "Task title": "Titolo del compito",
-  "Habit title": "Titolo dell'abitudine",
+  "Habit title": "Titolo dell'attività ricorrente",
   "Duration hours": "Ore di durata",
   "Duration minutes": "Minuti di durata",
   "Repeat period": "Periodo di ripetizione",
@@ -273,18 +262,16 @@
   "Done date comparison": "Confronto data di completamento",
   "Sort notes": "Ordina note",
   "Sort tasks": "Ordina compiti",
-  "Sort habits": "Ordina abitudini",
+  "Sort habits": "Ordina attività ricorrenti",
   "Edit item": "Modifica elemento",
-  "Edit habit": "Modifica abitudine",
+  "Edit habit": "Modifica attività ricorrente",
   "Edit note": "Modifica nota",
   "Edit task": "Modifica compito",
   "Calendar": "Calendario",
   "times done": "volte fatto",
-
   "Group by category": "Raggruppa per categoria",
   "Show last done time": "Mostra l'ultima ora di completamento",
   "Uncategorized": "Non categorizzato",
-
   "This week": "Questa settimana",
   "out of": "su",
   "Overdue": "In ritardo",
@@ -300,7 +287,6 @@
   "Mark complete when": "Segna come completo quando",
   "all habits are done": "tutte le abitudini sono completate",
   "any habit is done": "un'abitudine è completata",
-
   "Current streak": "Serie attuale",
   "Best streak": "Migliore serie",
   "Target": "Obiettivo",
@@ -316,7 +302,6 @@
   "Weeks": "Settimane",
   "Months": "Mesi",
   "Years": "Anni",
-
   "Display": "Visualizzazione",
   "Repetitions": "Ripetizioni",
   "Time": "Tempo",
@@ -348,5 +333,17 @@
   "Exact notification timing": "Orario esatto delle notifiche",
   "Open alarms & reminders": "Apri Sveglie e promemoria",
   "On": "Attivo",
-  "Off": "Disattivato"
+  "Off": "Disattivato",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }

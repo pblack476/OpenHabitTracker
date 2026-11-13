@@ -20,15 +20,12 @@
   "Priorities": "Prioritäten",
   "Trash": "Papierkorb",
   "Help": "Hilfe",
-
-  "Habits": "Gewohnheiten",
+  "Habits": "Wiederkehrende Aufgaben",
   "Notes": "Notizen",
   "Tasks": "Aufgaben",
-
   "Add new note": "Neue Notiz hinzufügen",
-  "Add new habit": "Neue Gewohnheit hinzufügen",
+  "Add new habit": "Wiederkehrende Aufgabe hinzufügen",
   "Add new task": "Neue Aufgabe hinzufügen",
-
   "Search...": "...",
   "Search": "Suchen",
   "Filter": "Filtern",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Gewohnheitsintervallverhältnis",
   "Show only habits with interval ratio over": "Zeige nur Gewohnheiten mit einem Intervallverhältnis über",
   "Show only habits with interval ratio under": "Zeige nur Gewohnheiten mit einem Intervallverhältnis unter",
-
   "Day": "Tag",
   "Week": "Woche",
   "Month": "Monat",
@@ -203,7 +199,6 @@
   "Elapsed time": "Vergangene Zeit",
   "Time spent": "Verbrachte Zeit",
   "Selected interval ratio": "Ausgewähltes Intervallverhältnis",
-
   "Previous week": "Vorherige Woche",
   "Previous month": "Vormonat",
   "Next month": "Nächster Monat",
@@ -226,7 +221,6 @@
   "Clear search": "Suche löschen",
   "Clear planned date": "Geplantes Datum löschen",
   "Clear done date": "Erledigungsdatum löschen",
-
   "Planned within days from today": "Geplant innerhalb von Tagen ab heute",
   "Done within days from today": "Erledigt innerhalb von Tagen ab heute",
   "Not done within days from today": "Nicht erledigt innerhalb von Tagen ab heute",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Erledigt: spätester Tag ab heute",
   "Clear planned range": "Geplanten Bereich löschen",
   "Clear done range": "Erledigungsbereich löschen",
-
   "Version": "Version",
   "OpenHabitTracker on GitHub": "OpenHabitTracker auf GitHub",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Verfügbar auf Windows, Linux, Android, iOS, macOS und als Web-App",
-
   "Contact": "Kontakt",
   "Report a bug or request a feature": "Fehler melden oder Funktion vorschlagen",
   "Ask a question": "Frage stellen",
   "Post in r/OpenHabitTracker": "In r/OpenHabitTracker posten",
   "Message me on Reddit": "Mir auf Reddit schreiben",
-
   "Privacy": "Datenschutz",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "speichert Ihre Daten (Notizen, Aufgaben und Gewohnheiten) auf Ihrem Gerät und bietet Ihnen vollständige Privatsphäre.",
   "It allows you to delete the data stored on your device at any time.": "Es ermöglicht Ihnen, die auf Ihrem Gerät gespeicherten Daten jederzeit zu löschen.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Es ist auf 6 Plattformen verfügbar und auf einigen Plattformen kann es Ihre Daten in Ihrem Google Drive sichern.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Wenn Sie ihm erlauben, Ihre Daten in Ihrem Google Drive zu sichern, erhält es Ihre E-Mail und zeigt Ihren Namen nur auf Ihrem Gerät an.",
   "You can read the privacy policy at": "Sie können die Datenschutzrichtlinie unter",
-
   "Main navigation": "Hauptnavigation",
   "Main content": "Hauptinhalt",
-
   "Note title": "Notiztitel",
   "Task title": "Aufgabentitel",
-  "Habit title": "Gewohnheitstitel",
+  "Habit title": "Titel der wiederkehrenden Aufgabe",
   "Duration hours": "Dauer Stunden",
   "Duration minutes": "Dauer Minuten",
   "Repeat period": "Wiederholungszeitraum",
@@ -273,18 +262,16 @@
   "Done date comparison": "Vergleich Erledigungsdatum",
   "Sort notes": "Notizen sortieren",
   "Sort tasks": "Aufgaben sortieren",
-  "Sort habits": "Gewohnheiten sortieren",
+  "Sort habits": "Wiederkehrende Aufgaben sortieren",
   "Edit item": "Element bearbeiten",
-  "Edit habit": "Gewohnheit bearbeiten",
+  "Edit habit": "Wiederkehrende Aufgabe bearbeiten",
   "Edit note": "Notiz bearbeiten",
   "Edit task": "Aufgabe bearbeiten",
   "Calendar": "Kalender",
   "times done": "Mal erledigt",
-
   "Group by category": "Nach Kategorie gruppieren",
   "Show last done time": "Letzte Erledigungszeit anzeigen",
   "Uncategorized": "Nicht kategorisiert",
-
   "This week": "Diese Woche",
   "out of": "von",
   "Overdue": "Überfällig",
@@ -300,7 +287,6 @@
   "Mark complete when": "Als vollständig markieren wenn",
   "all habits are done": "alle Gewohnheiten erledigt sind",
   "any habit is done": "eine Gewohnheit erledigt ist",
-
   "Current streak": "Aktuelle Serie",
   "Best streak": "Beste Serie",
   "Target": "Ziel",
@@ -316,7 +302,6 @@
   "Weeks": "Wochen",
   "Months": "Monate",
   "Years": "Jahre",
-
   "Display": "Anzeige",
   "Repetitions": "Wiederholungen",
   "Time": "Zeit",
@@ -348,5 +333,17 @@
   "Exact notification timing": "Genaue Benachrichtigungszeit",
   "Open alarms & reminders": "Wecker & Erinnerungen öffnen",
   "On": "Ein",
-  "Off": "Aus"
+  "Off": "Aus",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }
