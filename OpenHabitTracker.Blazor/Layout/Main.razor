@@ -200,7 +200,8 @@
 
     private Dimensions? _windowDimensions;
 
-    bool _showHome => _windowDimensions?.Width >= 1280 || _windowDimensions?.Width < 768;
+    // The overview dashboard remains reachable at every window width.
+    bool _showHome => true;
 
     private Type? _dynamicComponentType;
     private Type? _previousDynamicComponentType;

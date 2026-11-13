@@ -44,17 +44,31 @@ def database_counts(db: sqlite3.Connection) -> dict[str, int]:
 def backup_one(source_path: Path, destination: Path) -> dict:
     temporary = destination.with_suffix(".partial")
     try:
-        with read_only(source_path) as source:
-            with sqlite3.connect(temporary) as target:
+        source = read_only(source_path)
+        try:
+            target = sqlite3.connect(temporary)
+            try:
                 source.backup(target)
-        with read_only(temporary) as verified:
+            finally:
+                target.close()
+        finally:
+            source.close()
+
+        verified = read_only(temporary)
+        try:
             check = verified.execute("PRAGMA integrity_check").fetchone()[0]
             if check != "ok":
                 raise RuntimeError(f"Falha na integridade do backup: {check}")
             counts = database_counts(verified)
+        finally:
+            verified.close()
+
         temporary.replace(destination)
-        sha256 = hashlib.sha256(destination.read_bytes()).hexdigest()
-        return {"source": str(source_path), "backup": str(destination), "sha256": sha256, "counts": counts}
+        digest = hashlib.sha256()
+        with destination.open("rb") as input_file:
+            for chunk in iter(lambda: input_file.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return {"source": str(source_path), "backup": str(destination), "sha256": digest.hexdigest(), "counts": counts}
     finally:
         temporary.unlink(missing_ok=True)
 
