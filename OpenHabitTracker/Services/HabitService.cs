@@ -116,6 +116,9 @@ public class HabitService(ClientState clientState, ISearchFilterService searchFi
 
         NewHabit.Id = habit.Id;
 
+        // Duplicates preserve their checklist, not the completion history or item IDs.
+        await CopiedItemPersistence.SaveNewItems(_clientState, NewHabit);
+
         _clientState.Habits.Add(NewHabit.Id, NewHabit);
 
         if (NewHabit.CategoryId != 0 && _clientState.Categories?.TryGetValue(NewHabit.CategoryId, out CategoryModel? habitCategory) == true)

@@ -41,6 +41,7 @@ public static class Startup
         services.AddScoped<IPriorityService, PriorityService>();
         services.AddScoped<IHabitService, HabitService>();
         services.AddScoped<IItemService, ItemService>();
+        services.AddScoped<ContentClipboard>();
         services.AddScoped<INoteService, NoteService>();
         services.AddScoped<ITaskService, TaskService>();
         services.AddScoped<ITrashService, TrashService>();

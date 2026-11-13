@@ -60,6 +60,9 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
 
         NewTask.Id = task.Id;
 
+        // New items copied from another task must be inserted with fresh IDs.
+        await CopiedItemPersistence.SaveNewItems(_clientState, NewTask);
+
         _clientState.Tasks.Add(NewTask.Id, NewTask);
 
         if (NewTask.CategoryId != 0 && _clientState.Categories?.TryGetValue(NewTask.CategoryId, out CategoryModel? taskCategory) == true)
