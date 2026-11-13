@@ -21,17 +21,19 @@
 
 @* Root <div> inside <html><body><app> *@
 
-<div class="container-fluid d-flex flex-column vh-100 mh-100 overflow-hidden">
+<div class="container-fluid app-shell d-flex flex-column vh-100 mh-100 overflow-hidden">
 
     @* Header row *@
 
-    <nav class="row flex-shrink-1" aria-label="@Loc["Main navigation"]">
+    <nav class="row flex-shrink-1 app-topbar" aria-label="@Loc["Main navigation"]">
 
         @* Header column *@
 
-        <div class="col bg-body-secondary d-flex align-items-center">
+        <div class="col bg-body-secondary d-flex align-items-center app-topbar-inner">
 
             <button @ref="_menuButtonRef" class="nav-link px-2 py-1 my-1 @(_dynamicComponentType == typeof(Menu) ? "active" : "")" @onclick="ToggleMenu" aria-label="@Loc["Toggle menu"]" aria-expanded="@(_dynamicComponentType == typeof(Menu))" data-main-step-1><i class="bi bi-three-dots-vertical"></i></button>
+
+            <span class="app-brand d-none d-xl-inline-flex align-items-center gap-2"><i class="bi bi-check2-circle" aria-hidden="true"></i><strong>OpenHabitTracker</strong></span>
 
             @* <button class="nav-link" @onclick="Localization.JsonStringLocalizer.SerializeMissingAndUnusedValues"><i class="bi bi-floppy"></i> Save</button> *@
             @* <button class="nav-link" @onclick="() =>
@@ -47,11 +49,13 @@
             {
                 <NavLink class="nav-link px-2 py-1 ms-3" href="/" Match=NavLinkMatch.All aria-current="@AriaCurrentPage("")" aria-label="@Loc["Home"]" data-main-step-2><i class="bi bi-house"></i></NavLink>
             }
-            <NavLink class="nav-link px-2 py-1 ms-3" href="notes" aria-current="@AriaCurrentPage("notes")" aria-label="@Loc["Notes"]" data-main-step-3><i class="bi bi-sticky"></i></NavLink>
-            <NavLink class="nav-link px-2 py-1 ms-3" href="tasks" aria-current="@AriaCurrentPage("tasks")" aria-label="@Loc["Tasks"]" data-main-step-4><i class="bi bi-list-task"></i></NavLink>
-            <NavLink class="nav-link px-2 py-1 ms-3" href="habits" aria-current="@AriaCurrentPage("habits")" aria-label="@Loc["Habits"]" data-main-step-5><i class="bi bi-repeat"></i></NavLink>
+            <NavLink class="nav-link px-2 py-1 ms-3" href="notes" aria-current="@AriaCurrentPage("notes")" aria-label="@Loc["Notes"]" data-main-step-3><i class="bi bi-sticky"></i><span class="d-none d-lg-inline">@Loc["Notes"]</span></NavLink>
+            <NavLink class="nav-link px-2 py-1 ms-3" href="tasks" aria-current="@AriaCurrentPage("tasks")" aria-label="@Loc["Tasks"]" data-main-step-4><i class="bi bi-list-task"></i><span class="d-none d-lg-inline">@Loc["Tasks"]</span></NavLink>
+            <NavLink class="nav-link px-2 py-1 ms-3" href="habits" aria-current="@AriaCurrentPage("habits")" aria-label="@Loc["Habits"]" data-main-step-5><i class="bi bi-repeat"></i><span class="d-none d-lg-inline">@Loc["Habits"]</span></NavLink>
 
             <button @ref="_searchButtonRef" class="nav-link px-2 py-1 ms-3 @(_dynamicComponentType == typeof(Search) ? "active" : "")" @onclick="ToggleSearch" aria-label="@Loc["Search, Filter, Sort"]" aria-expanded="@(_dynamicComponentType == typeof(Search))" data-main-step-6><i class="bi bi-search"></i></button>
+
+            <button @ref="_remindersButtonRef" class="nav-link px-2 py-1 ms-3 @(_dynamicComponentType == typeof(Settings) ? "active" : "")" @onclick="ToggleReminders" aria-label="@Loc["Reminders"]" title="@Loc["Reminders"]" aria-expanded="@(_dynamicComponentType == typeof(Settings))"><i class="bi bi-bell" aria-hidden="true"></i></button>
 
             @if (ClientState.Settings.ShowHelp)
             {
@@ -94,7 +98,7 @@
             {
                 @* Sidebar column *@
 
-                <div id="sidebar-container" class="col-12 col-md-2 child-column px-0 px-md-1" style="min-width: 350px" role="region" aria-label="@Loc[_titleByTypeName[_dynamicComponentType!.Name]]" tabindex="-1" @onkeydown="HandleSidebarKeyDown">
+                <div id="sidebar-container" class="col-12 col-md-3 child-column app-sidebar px-0 px-md-1" role="region" aria-label="@Loc[_titleByTypeName[_dynamicComponentType!.Name]]" tabindex="-1" @onkeydown="HandleSidebarKeyDown">
 
                     @* Sidebar title *@
 
@@ -206,6 +210,7 @@
 
     private ElementReference _menuButtonRef;
     private ElementReference _searchButtonRef;
+    private ElementReference _remindersButtonRef;
     private ElementReference? _lastOpenerRef;
     private Dictionary<string, Dictionary<string, object>> _dynamicComponentParametersByName = new();
 
@@ -471,6 +476,12 @@
         {
             _dynamicComponentType = _previousDynamicComponentType;
         }
+    }
+
+    private void ToggleReminders()
+    {
+        _lastOpenerRef = _remindersButtonRef;
+        _dynamicComponentType = _dynamicComponentType == typeof(Settings) ? null : typeof(Settings);
     }
 
     private void ToggleSearch()

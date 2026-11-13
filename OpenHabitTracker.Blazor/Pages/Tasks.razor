@@ -132,7 +132,7 @@
                     }
                     else
                     {
-                        <div class="@task.Color">
+                        <div class="@($"{task.Color} app-item-card")">
                             <div class="input-group flex-nowrap">
 
                                 @if (ClientState.Settings.ShowPriorityDropdown)
@@ -147,6 +147,15 @@
                                 }
                                 <button class="@($"btn {(task.CompletedAt is null ? "btn-outline-primary" : "btn-primary")}")" aria-label="@Loc["Mark as done"]" @onclick="() => OnMarkAsDone(task)" data-tasks-step-4><i class="bi bi-check-square"></i></button>
                             </div>
+
+                            @if (task.CompletedAt is null && UrgencyOrder.GetTaskBucket(task, DateTime.Now) == UrgencyOrder.TaskBucket.Overdue)
+                            {
+                                <span class="app-urgency-pill app-urgency-overdue"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> @Loc["Overdue"]</span>
+                            }
+                            else if (task.CompletedAt is null && UrgencyOrder.GetTaskBucket(task, DateTime.Now) == UrgencyOrder.TaskBucket.Today)
+                            {
+                                <span class="app-urgency-pill app-urgency-today">@Loc["Today"]</span>
+                            }
 
                             @if (ClientState.Settings.ShowItemList)
                             {
