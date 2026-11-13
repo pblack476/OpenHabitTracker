@@ -620,6 +620,17 @@ diff --git a/OpenHabitTracker.Blazor/wwwroot/app.css b/OpenHabitTracker.Blazor/w
 +@media (max-width:420px) { .app-topbar-inner { padding:.3rem .35rem; gap:0; } .app-shell .app-topbar .nav-link { min-width:2.1rem; padding:.35rem .45rem !important; } .app-kpis { gap:.5rem; } .app-kpi { padding:.8rem; } .app-kpi strong { font-size:1.65rem; } }
 +@media (prefers-reduced-motion:reduce) { .app-shell .app-topbar .nav-link,.app-shell .app-item-card { transition:none; } }
 +
+diff --git a/OpenHabitTracker.UnitTests/Components/DateTimeFormatTests.cs b/OpenHabitTracker.UnitTests/Components/DateTimeFormatTests.cs
+--- a/OpenHabitTracker.UnitTests/Components/DateTimeFormatTests.cs
++++ b/OpenHabitTracker.UnitTests/Components/DateTimeFormatTests.cs
+@@ -53,6 +53,7 @@ public void SetUp()
+ 
+         _ctx.Services.AddScoped(_ => _clientState);
+         _ctx.Services.AddScoped(_ => _taskService);
++        _ctx.Services.AddScoped<ContentClipboard>();
+         _ctx.Services.AddScoped(_ => _habitService);
+         _ctx.Services.AddScoped(_ => Substitute.For<ICategoryService>());
+         _ctx.Services.AddScoped<ISearchFilterService>(_ => new SearchFilterService());
 diff --git a/OpenHabitTracker.UnitTests/Components/HabitComponentTests.cs b/OpenHabitTracker.UnitTests/Components/HabitComponentTests.cs
 --- a/OpenHabitTracker.UnitTests/Components/HabitComponentTests.cs
 +++ b/OpenHabitTracker.UnitTests/Components/HabitComponentTests.cs
