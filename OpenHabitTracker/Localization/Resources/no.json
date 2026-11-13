@@ -20,15 +20,12 @@
   "Priorities": "Prioriteter",
   "Trash": "Papirkurv",
   "Help": "Hjelp",
-
-  "Habits": "Vaner",
+  "Habits": "Gjentakende oppgaver",
   "Notes": "Notater",
   "Tasks": "Oppgaver",
-
   "Add new note": "Legg til notat",
-  "Add new habit": "Legg til vane",
+  "Add new habit": "Legg til gjentakende oppgave",
   "Add new task": "Legg til oppgave",
-
   "Search...": "...",
   "Search": "Søk",
   "Filter": "Filtrer",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Vaneintervallforhold",
   "Show only habits with interval ratio over": "Vis bare vaner med intervallforhold over",
   "Show only habits with interval ratio under": "Vis bare vaner med intervallforhold under",
-
   "Day": "Dag",
   "Week": "Uke",
   "Month": "Måned",
@@ -203,7 +199,6 @@
   "Elapsed time": "Forløpt tid",
   "Time spent": "Brukt tid",
   "Selected interval ratio": "Valgt intervallforhold",
-
   "Previous week": "Forrige uke",
   "Previous month": "Forrige måned",
   "Next month": "Neste måned",
@@ -226,7 +221,6 @@
   "Clear search": "Tøm søk",
   "Clear planned date": "Tøm planlagt dato",
   "Clear done date": "Tøm ferdigdato",
-
   "Planned within days from today": "Planlagt innen dager fra i dag",
   "Done within days from today": "Fullført innen dager fra i dag",
   "Not done within days from today": "Ikke fullført innen dager fra i dag",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Fullført: seneste dag fra i dag",
   "Clear planned range": "Tøm planlagt intervall",
   "Clear done range": "Tøm ferdigintervall",
-
   "Version": "Versjon",
   "OpenHabitTracker on GitHub": "OpenHabitTracker på GitHub",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Tilgjengelig på Windows, Linux, Android, iOS, macOS og som nettapp",
-
   "Contact": "Kontakt",
   "Report a bug or request a feature": "Meld en feil eller foreslå en funksjon",
   "Ask a question": "Still et spørsmål",
   "Post in r/OpenHabitTracker": "Post i r/OpenHabitTracker",
   "Message me on Reddit": "Send meg en melding på Reddit",
-
   "Privacy": "Personvern",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "lagrer dataene dine (notater, oppgaver og vaner) på enheten din for fullstendig personvern.",
   "It allows you to delete the data stored on your device at any time.": "Du kan slette de lagrede dataene på enheten din når som helst.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Tilgjengelig på 6 plattformer; på noen kan du sikkerhetskopiere data til Google Disk.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Hvis du tillater sikkerhetskopiering til Google Disk, mottar det e-posten din og viser navnet ditt bare på enheten din.",
   "You can read the privacy policy at": "Du kan lese personvernreglene på",
-
   "Main navigation": "Hovednavigasjon",
   "Main content": "Hovedinnhold",
-
   "Note title": "Notattittel",
   "Task title": "Oppgavetittel",
-  "Habit title": "Vanetittel",
+  "Habit title": "Tittel på gjentakende oppgave",
   "Duration hours": "Varighet (timer)",
   "Duration minutes": "Varighet (minutter)",
   "Repeat period": "Gjentagelsesperiode",
@@ -273,18 +262,16 @@
   "Done date comparison": "Ferdigdatosammenligning",
   "Sort notes": "Sorter notater",
   "Sort tasks": "Sorter oppgaver",
-  "Sort habits": "Sorter vaner",
+  "Sort habits": "Sorter gjentakende oppgaver",
   "Edit item": "Rediger element",
-  "Edit habit": "Rediger vane",
+  "Edit habit": "Rediger gjentakende oppgave",
   "Edit note": "Rediger notat",
   "Edit task": "Rediger oppgave",
   "Calendar": "Kalender",
   "times done": "ganger utført",
-
   "Group by category": "Grupper etter kategori",
   "Show last done time": "Vis sist fullført tidspunkt",
   "Uncategorized": "Ikke kategorisert",
-
   "This week": "Denne uken",
   "out of": "av",
   "Overdue": "Forsinket",
@@ -300,7 +287,6 @@
   "Mark complete when": "Merk som fullført når",
   "all habits are done": "alle vaner er fullført",
   "any habit is done": "en vane er fullført",
-
   "Current streak": "Nåværende serie",
   "Best streak": "Beste serie",
   "Target": "Mål",
@@ -316,7 +302,6 @@
   "Weeks": "Uker",
   "Months": "Måneder",
   "Years": "År",
-
   "Display": "Visning",
   "Repetitions": "Gjentagelser",
   "Time": "Tid",
@@ -348,5 +333,17 @@
   "Exact notification timing": "Nøyaktig varslingstid",
   "Open alarms & reminders": "Åpne Alarmer og påminnelser",
   "On": "På",
-  "Off": "Av"
+  "Off": "Av",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }

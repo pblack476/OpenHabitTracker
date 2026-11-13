@@ -20,15 +20,12 @@
   "Priorities": "우선순위",
   "Trash": "휴지통",
   "Help": "도움말",
-
-  "Habits": "습관",
+  "Habits": "반복 작업",
   "Notes": "메모",
   "Tasks": "할 일",
-
   "Add new note": "메모 추가",
-  "Add new habit": "습관 추가",
+  "Add new habit": "반복 작업 추가",
   "Add new task": "할 일 추가",
-
   "Search...": "...",
   "Search": "검색",
   "Filter": "필터",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "습관 간격 비율",
   "Show only habits with interval ratio over": "간격 비율이 이상인 습관만 표시",
   "Show only habits with interval ratio under": "간격 비율이 이하인 습관만 표시",
-
   "Day": "일",
   "Week": "주",
   "Month": "월",
@@ -203,7 +199,6 @@
   "Elapsed time": "경과 시간",
   "Time spent": "소요 시간",
   "Selected interval ratio": "선택한 간격 비율",
-
   "Previous week": "이전 주",
   "Previous month": "이전 달",
   "Next month": "다음 달",
@@ -226,7 +221,6 @@
   "Clear search": "검색 지우기",
   "Clear planned date": "예정일 지우기",
   "Clear done date": "완료일 지우기",
-
   "Planned within days from today": "예정: 오늘부터 일수 이내",
   "Done within days from today": "완료: 오늘부터 일수 이내",
   "Not done within days from today": "미완료: 오늘부터 일수 이내",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "완료: 오늘부터 가장 늦은 날",
   "Clear planned range": "예정 범위 지우기",
   "Clear done range": "완료 범위 지우기",
-
   "Version": "버전",
   "OpenHabitTracker on GitHub": "GitHub의 OpenHabitTracker",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Windows, Linux, Android, iOS, macOS 및 웹 지원",
-
   "Contact": "문의",
   "Report a bug or request a feature": "버그 신고 또는 기능 요청",
   "Ask a question": "질문하기",
   "Post in r/OpenHabitTracker": "r/OpenHabitTracker에 글쓰기",
   "Message me on Reddit": "Reddit으로 메시지 보내기",
-
   "Privacy": "개인정보",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "메모, 할 일, 습관 데이터를 기기에 저장하여 완전한 개인정보 보호를 제공합니다.",
   "It allows you to delete the data stored on your device at any time.": "기기에 저장된 데이터를 언제든지 삭제할 수 있습니다.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "6개 플랫폼에서 이용 가능하며 일부에서는 Google Drive에 백업할 수 있습니다.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Google Drive 백업을 허용하면 이메일을 수신하고 이름은 기기에서만 표시됩니다.",
   "You can read the privacy policy at": "개인정보 처리방침은 여기서 확인하세요:",
-
   "Main navigation": "메인 내비게이션",
   "Main content": "메인 콘텐츠",
-
   "Note title": "메모 제목",
   "Task title": "할 일 제목",
-  "Habit title": "습관 제목",
+  "Habit title": "반복 작업 제목",
   "Duration hours": "소요 시간(시)",
   "Duration minutes": "소요 시간(분)",
   "Repeat period": "반복 기간",
@@ -273,18 +262,16 @@
   "Done date comparison": "완료일 비교",
   "Sort notes": "메모 정렬",
   "Sort tasks": "할 일 정렬",
-  "Sort habits": "습관 정렬",
+  "Sort habits": "반복 작업 정렬",
   "Edit item": "항목 편집",
-  "Edit habit": "습관 편집",
+  "Edit habit": "반복 작업 편집",
   "Edit note": "메모 편집",
   "Edit task": "할 일 편집",
   "Calendar": "달력",
   "times done": "회 완료",
-
   "Group by category": "카테고리별 그룹화",
   "Show last done time": "마지막 완료 시간 표시",
   "Uncategorized": "미분류",
-
   "This week": "이번 주",
   "out of": "/",
   "Overdue": "기한 초과",
@@ -300,7 +287,6 @@
   "Mark complete when": "완료 조건",
   "all habits are done": "모든 습관이 완료됨",
   "any habit is done": "습관 하나 이상 완료됨",
-
   "Current streak": "현재 연속",
   "Best streak": "최고 연속",
   "Target": "목표",
@@ -316,7 +302,6 @@
   "Weeks": "주",
   "Months": "개월",
   "Years": "년",
-
   "Display": "표시",
   "Repetitions": "반복",
   "Time": "시간",
@@ -348,5 +333,17 @@
   "Exact notification timing": "정확한 알림 시간",
   "Open alarms & reminders": "알람 및 리마인더 열기",
   "On": "켜짐",
-  "Off": "꺼짐"
+  "Off": "꺼짐",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }

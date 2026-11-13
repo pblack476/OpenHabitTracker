@@ -20,15 +20,12 @@
   "Priorities": "Prioriteiten",
   "Trash": "Prullenbak",
   "Help": "Help",
-
-  "Habits": "Gewoontes",
+  "Habits": "Terugkerende taken",
   "Notes": "Notities",
   "Tasks": "Taken",
-
   "Add new note": "Notitie toevoegen",
-  "Add new habit": "Gewoonte toevoegen",
+  "Add new habit": "Terugkerende taak toevoegen",
   "Add new task": "Taak toevoegen",
-
   "Search...": "...",
   "Search": "Zoeken",
   "Filter": "Filteren",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Gewoonteintervalverhouding",
   "Show only habits with interval ratio over": "Toon alleen gewoontes met intervalverhouding boven",
   "Show only habits with interval ratio under": "Toon alleen gewoontes met intervalverhouding onder",
-
   "Day": "Dag",
   "Week": "Week",
   "Month": "Maand",
@@ -203,7 +199,6 @@
   "Elapsed time": "Verstreken tijd",
   "Time spent": "Bestede tijd",
   "Selected interval ratio": "Geselecteerde intervalverhouding",
-
   "Previous week": "Vorige week",
   "Previous month": "Vorige maand",
   "Next month": "Volgende maand",
@@ -226,7 +221,6 @@
   "Clear search": "Zoekveld wissen",
   "Clear planned date": "Geplande datum wissen",
   "Clear done date": "Voltooiingsdatum wissen",
-
   "Planned within days from today": "Gepland binnen dagen vanaf vandaag",
   "Done within days from today": "Voltooid binnen dagen vanaf vandaag",
   "Not done within days from today": "Niet voltooid binnen dagen vanaf vandaag",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Voltooid: laatste dag vanaf vandaag",
   "Clear planned range": "Gepland bereik wissen",
   "Clear done range": "Voltooiingsbereik wissen",
-
   "Version": "Versie",
   "OpenHabitTracker on GitHub": "OpenHabitTracker op GitHub",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Beschikbaar op Windows, Linux, Android, iOS, macOS en als web-app",
-
   "Contact": "Contact",
   "Report a bug or request a feature": "Een bug melden of functie aanvragen",
   "Ask a question": "Een vraag stellen",
   "Post in r/OpenHabitTracker": "Posten in r/OpenHabitTracker",
   "Message me on Reddit": "Mij een bericht sturen op Reddit",
-
   "Privacy": "Privacy",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "slaat je gegevens (notities, taken en gewoontes) op je apparaat op voor volledige privacy.",
   "It allows you to delete the data stored on your device at any time.": "Je kunt de opgeslagen gegevens op elk moment verwijderen.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Beschikbaar op 6 platforms; op sommige kun je een back-up maken naar Google Drive.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Als je een back-up naar Google Drive toestaat, ontvangt het je e-mail en toont het je naam alleen op je apparaat.",
   "You can read the privacy policy at": "Je kunt het privacybeleid lezen op",
-
   "Main navigation": "Hoofdnavigatie",
   "Main content": "Hoofdinhoud",
-
   "Note title": "Notitietitel",
   "Task title": "Taaktitel",
-  "Habit title": "Gewoontetitel",
+  "Habit title": "Titel terugkerende taak",
   "Duration hours": "Duur (uren)",
   "Duration minutes": "Duur (minuten)",
   "Repeat period": "Herhalingsperiode",
@@ -273,18 +262,16 @@
   "Done date comparison": "Voltooiingsdatumvergelijking",
   "Sort notes": "Notities sorteren",
   "Sort tasks": "Taken sorteren",
-  "Sort habits": "Gewoontes sorteren",
+  "Sort habits": "Terugkerende taken sorteren",
   "Edit item": "Item bewerken",
-  "Edit habit": "Gewoonte bewerken",
+  "Edit habit": "Terugkerende taak bewerken",
   "Edit note": "Notitie bewerken",
   "Edit task": "Taak bewerken",
   "Calendar": "Kalender",
   "times done": "keer gedaan",
-
   "Group by category": "Groeperen op categorie",
   "Show last done time": "Laatste voltooiingstijd tonen",
   "Uncategorized": "Niet gecategoriseerd",
-
   "This week": "Deze week",
   "out of": "van",
   "Overdue": "Te laat",
@@ -300,7 +287,6 @@
   "Mark complete when": "Markeer als volledig wanneer",
   "all habits are done": "alle gewoontes voltooid zijn",
   "any habit is done": "een gewoonte voltooid is",
-
   "Current streak": "Huidige reeks",
   "Best streak": "Beste reeks",
   "Target": "Doel",
@@ -316,7 +302,6 @@
   "Weeks": "Weken",
   "Months": "Maanden",
   "Years": "Jaren",
-
   "Display": "Weergave",
   "Repetitions": "Herhalingen",
   "Time": "Tijd",
@@ -348,5 +333,17 @@
   "Exact notification timing": "Exacte meldingstijd",
   "Open alarms & reminders": "Wekkers en herinneringen openen",
   "On": "Aan",
-  "Off": "Uit"
+  "Off": "Uit",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }

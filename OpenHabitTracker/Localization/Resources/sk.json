@@ -20,15 +20,12 @@
   "Priorities": "Priority",
   "Trash": "Kôš",
   "Help": "Pomoc",
-
-  "Habits": "Návyky",
+  "Habits": "Opakované úlohy",
   "Notes": "Poznámky",
   "Tasks": "Úlohy",
-
   "Add new note": "Pridaj novú poznámku",
-  "Add new habit": "Pridaj nový návyk",
+  "Add new habit": "Pridať opakovanú úlohu",
   "Add new task": "Pridaj novú úlohu",
-
   "Search...": "...",
   "Search": "Hľadaj",
   "Filter": "Filtruj",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Pomer intervalu návyku",
   "Show only habits with interval ratio over": "Zobraz iba návyky s pomerom intervalu nad",
   "Show only habits with interval ratio under": "Zobraz iba návyky s pomerom intervalu pod",
-
   "Day": "Deň",
   "Week": "Týždeň",
   "Month": "Mesiac",
@@ -203,7 +199,6 @@
   "Elapsed time": "Uplynutý čas",
   "Time spent": "Strávený čas",
   "Selected interval ratio": "Vybraný pomer intervalu",
-
   "Previous week": "Predchádzajúci týždeň",
   "Previous month": "Predchádzajúci mesiac",
   "Next month": "Nasledujúci mesiac",
@@ -226,7 +221,6 @@
   "Clear search": "Vymaž hľadanie",
   "Clear planned date": "Vymaž plánovaný dátum",
   "Clear done date": "Vymaž dátum dokončenia",
-
   "Planned within days from today": "Naplánované v rozmedzí dní odo dneška",
   "Done within days from today": "Dokončené v rozmedzí dní odo dneška",
   "Not done within days from today": "Nedokončené v rozmedzí dní odo dneška",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Dokončené: najvzdialenejší deň odo dneška",
   "Clear planned range": "Vymaž plánovaný rozsah",
   "Clear done range": "Vymaž rozsah dokončenia",
-
   "Version": "Verzia",
   "OpenHabitTracker on GitHub": "OpenHabitTracker na GitHube",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Dostupný pre Windows, Linux, Android, iOS, macOS a ako webová aplikácia",
-
   "Contact": "Kontakt",
   "Report a bug or request a feature": "Nahlás chybu alebo navrhni funkciu",
   "Ask a question": "Polož otázku",
   "Post in r/OpenHabitTracker": "Prispej do r/OpenHabitTracker",
   "Message me on Reddit": "Napíš mi na Reddite",
-
   "Privacy": "Súkromie",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "ukladá tvoje dáta (poznámky, úlohy a návyky) na tvojom zariadení a ponúka ti úplné súkromie.",
   "It allows you to delete the data stored on your device at any time.": "Umožňuje kedykoľvek vymazať dáta uložené na tvojom zariadení.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Je dostupný na 6 platformách a na niektorých platformách môže zálohovať tvoje dáta na tvoj Disk Google.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Ak povolíš zálohovanie dát na Disk Google, aplikácia dostane tvoj e-mail a zobrazí tvoje meno iba na tvojom zariadení.",
   "You can read the privacy policy at": "Zásady ochrany súkromia si môžeš prečítať na",
-
   "Main navigation": "Hlavná navigácia",
   "Main content": "Hlavný obsah",
-
   "Note title": "Názov poznámky",
   "Task title": "Názov úlohy",
-  "Habit title": "Názov návyku",
+  "Habit title": "Názov opakovanej úlohy",
   "Duration hours": "Hodiny trvania",
   "Duration minutes": "Minúty trvania",
   "Repeat period": "Obdobie opakovania",
@@ -273,18 +262,16 @@
   "Done date comparison": "Porovnanie dátumu dokončenia",
   "Sort notes": "Zoraď poznámky",
   "Sort tasks": "Zoraď úlohy",
-  "Sort habits": "Zoraď návyky",
+  "Sort habits": "Zoradiť opakované úlohy",
   "Edit item": "Uprav položku",
-  "Edit habit": "Uprav návyk",
+  "Edit habit": "Upraviť opakovanú úlohu",
   "Edit note": "Uprav poznámku",
   "Edit task": "Uprav úlohu",
   "Calendar": "Kalendár",
   "times done": "krát hotovo",
-
   "Group by category": "Zoskupiť podľa kategórie",
   "Show last done time": "Zobraziť čas posledného dokončenia",
   "Uncategorized": "Bez kategórie",
-
   "This week": "Tento týždeň",
   "out of": "z",
   "Overdue": "Po termíne",
@@ -300,7 +287,6 @@
   "Mark complete when": "Označiť ako dokončené keď",
   "all habits are done": "všetky návyky sú splnené",
   "any habit is done": "niektorý návyk je splnený",
-
   "Current streak": "Aktuálna séria",
   "Best streak": "Najlepšia séria",
   "Target": "Cieľ",
@@ -316,7 +302,6 @@
   "Weeks": "Týždňov",
   "Months": "Mesiacov",
   "Years": "Rokov",
-
   "Display": "Zobrazenie",
   "Repetitions": "Opakovania",
   "Time": "Čas",
@@ -348,5 +333,17 @@
   "Exact notification timing": "Presný čas upozornení",
   "Open alarms & reminders": "Otvoriť Budíky a pripomenutia",
   "On": "Zapnuté",
-  "Off": "Vypnuté"
+  "Off": "Vypnuté",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }

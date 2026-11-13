@@ -20,15 +20,12 @@
   "Priorities": "Prioriteti",
   "Trash": "Smeće",
   "Help": "Pomoć",
-
-  "Habits": "Navike",
+  "Habits": "Ponavljajući zadaci",
   "Notes": "Beleške",
   "Tasks": "Zadaci",
-
   "Add new note": "Dodaj novu belešku",
-  "Add new habit": "Dodaj novu naviku",
+  "Add new habit": "Dodaj ponavljajući zadatak",
   "Add new task": "Dodaj novi zadatak",
-
   "Search...": "...",
   "Search": "Traži",
   "Filter": "Filtriraj",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Odnos intervala navike",
   "Show only habits with interval ratio over": "Prikaži samo navike s odnosom intervala iznad",
   "Show only habits with interval ratio under": "Prikaži samo navike s odnosom intervala ispod",
-
   "Day": "Dan",
   "Week": "Nedelja",
   "Month": "Mesec",
@@ -203,7 +199,6 @@
   "Elapsed time": "Proteklo vreme",
   "Time spent": "Utrošeno vreme",
   "Selected interval ratio": "Odabrani odnos intervala",
-
   "Previous week": "Prethodna nedelja",
   "Previous month": "Prethodni mesec",
   "Next month": "Sledeći mesec",
@@ -226,7 +221,6 @@
   "Clear search": "Obriši pretragu",
   "Clear planned date": "Obriši planirani datum",
   "Clear done date": "Obriši datum završetka",
-
   "Planned within days from today": "Planirano unutar dana od danas",
   "Done within days from today": "Gotovo unutar dana od danas",
   "Not done within days from today": "Nije gotovo unutar dana od danas",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Gotovo: najkasniji dan od danas",
   "Clear planned range": "Obriši planirani raspon",
   "Clear done range": "Obriši raspon završetka",
-
   "Version": "Verzija",
   "OpenHabitTracker on GitHub": "OpenHabitTracker na GitHubu",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Dostupno na Windows, Linux, Android, iOS, macOS i kao web aplikacija",
-
   "Contact": "Kontakt",
   "Report a bug or request a feature": "Prijavite grešku ili predložite funkciju",
   "Ask a question": "Postavite pitanje",
   "Post in r/OpenHabitTracker": "Objavite u r/OpenHabitTracker",
   "Message me on Reddit": "Pišite mi na Redditu",
-
   "Privacy": "Privatnost",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "pohranjuje vaše podatke (beleške, zadatke i navike) na vašem uređaju, nudeći vam potpunu privatnost.",
   "It allows you to delete the data stored on your device at any time.": "Omogućuje vam brisanje podataka pohranjenih na vašem uređaju u bilo kom trenutku.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Dostupan je na 6 platformi i na nekim platformama može napraviti rezervnu kopiju podataka na Google Drive.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Ako dopustite pravljenje rezervne kopije podataka na Google Drive, aplikacija će primiti vašu e-poštu i prikazati vaše ime samo na vašem uređaju.",
   "You can read the privacy policy at": "Politiku privatnosti možete pročitati na",
-
   "Main navigation": "Glavna navigacija",
   "Main content": "Glavni sadržaj",
-
   "Note title": "Naslov beleške",
   "Task title": "Naslov zadatka",
-  "Habit title": "Naslov navike",
+  "Habit title": "Naslov ponavljajućeg zadatka",
   "Duration hours": "Sati trajanja",
   "Duration minutes": "Minuti trajanja",
   "Repeat period": "Period ponavljanja",
@@ -273,18 +262,16 @@
   "Done date comparison": "Poređenje datuma završetka",
   "Sort notes": "Sortiraj beleške",
   "Sort tasks": "Sortiraj zadatke",
-  "Sort habits": "Sortiraj navike",
+  "Sort habits": "Sortiraj ponavljajuće zadatke",
   "Edit item": "Uredi stavku",
-  "Edit habit": "Uredi naviku",
+  "Edit habit": "Uredi ponavljajući zadatak",
   "Edit note": "Uredi belešku",
   "Edit task": "Uredi zadatak",
   "Calendar": "Kalendar",
   "times done": "puta gotovo",
-
   "Group by category": "Grupiši po kategoriji",
   "Show last done time": "Prikaži poslednje vreme završetka",
   "Uncategorized": "Bez kategorije",
-
   "This week": "Ove nedelje",
   "out of": "od",
   "Overdue": "Zakasnelo",
@@ -300,7 +287,6 @@
   "Mark complete when": "Označi kao završeno kada",
   "all habits are done": "su sve navike završene",
   "any habit is done": "je neka navika završena",
-
   "Current streak": "Trenutni niz",
   "Best streak": "Najbolji niz",
   "Target": "Cilj",
@@ -316,7 +302,6 @@
   "Weeks": "Nedelja",
   "Months": "Meseci",
   "Years": "Godina",
-
   "Display": "Prikaz",
   "Repetitions": "Ponavljanja",
   "Time": "Vreme",
@@ -348,5 +333,17 @@
   "Exact notification timing": "Tačno vreme obaveštenja",
   "Open alarms & reminders": "Otvori Alarmi i podsetnici",
   "On": "Uključeno",
-  "Off": "Isključeno"
+  "Off": "Isključeno",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }

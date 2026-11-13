@@ -20,15 +20,12 @@
   "Priorities": "Prioriteringar",
   "Trash": "Papperskorgen",
   "Help": "Hjälp",
-
-  "Habits": "Vanor",
+  "Habits": "Återkommande uppgifter",
   "Notes": "Anteckningar",
   "Tasks": "Uppgifter",
-
   "Add new note": "Lägg till anteckning",
-  "Add new habit": "Lägg till vana",
+  "Add new habit": "Lägg till återkommande uppgift",
   "Add new task": "Lägg till uppgift",
-
   "Search...": "...",
   "Search": "Sök",
   "Filter": "Filtrera",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Vaneintervallförhållande",
   "Show only habits with interval ratio over": "Visa bara vanor med intervallförhållande över",
   "Show only habits with interval ratio under": "Visa bara vanor med intervallförhållande under",
-
   "Day": "Dag",
   "Week": "Vecka",
   "Month": "Månad",
@@ -203,7 +199,6 @@
   "Elapsed time": "Förfluten tid",
   "Time spent": "Spenderad tid",
   "Selected interval ratio": "Valt intervallförhållande",
-
   "Previous week": "Föregående vecka",
   "Previous month": "Föregående månad",
   "Next month": "Nästa månad",
@@ -226,7 +221,6 @@
   "Clear search": "Rensa sökning",
   "Clear planned date": "Rensa planerat datum",
   "Clear done date": "Rensa klardatum",
-
   "Planned within days from today": "Planerad inom dagar från idag",
   "Done within days from today": "Klar inom dagar från idag",
   "Not done within days from today": "Inte klar inom dagar från idag",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Klar: senaste dag från idag",
   "Clear planned range": "Rensa planerat intervall",
   "Clear done range": "Rensa klarintervall",
-
   "Version": "Version",
   "OpenHabitTracker on GitHub": "OpenHabitTracker på GitHub",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Tillgänglig på Windows, Linux, Android, iOS, macOS och som webbapp",
-
   "Contact": "Kontakt",
   "Report a bug or request a feature": "Rapportera ett fel eller föreslå en funktion",
   "Ask a question": "Ställ en fråga",
   "Post in r/OpenHabitTracker": "Posta i r/OpenHabitTracker",
   "Message me on Reddit": "Skicka ett meddelande på Reddit",
-
   "Privacy": "Integritet",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "sparar dina data (anteckningar, uppgifter och vanor) på din enhet för fullständig integritet.",
   "It allows you to delete the data stored on your device at any time.": "Du kan radera de lagrade uppgifterna på din enhet när som helst.",
@@ -256,13 +247,11 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Tillgänglig på 6 plattformar; på vissa kan du säkerhetskopiera data till Google Drive.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Om du tillåter säkerhetskopiering till Google Drive tar den emot din e-post och visar ditt namn bara på din enhet.",
   "You can read the privacy policy at": "Du kan läsa integritetspolicyn på",
-
   "Main navigation": "Huvudnavigering",
   "Main content": "Huvudinnehåll",
-
   "Note title": "Anteckningstitel",
   "Task title": "Uppgiftstitel",
-  "Habit title": "Vanetitel",
+  "Habit title": "Titel på återkommande uppgift",
   "Duration hours": "Varaktighet (timmar)",
   "Duration minutes": "Varaktighet (minuter)",
   "Repeat period": "Upprepningsperiod",
@@ -273,18 +262,16 @@
   "Done date comparison": "Jämförelse av klardatum",
   "Sort notes": "Sortera anteckningar",
   "Sort tasks": "Sortera uppgifter",
-  "Sort habits": "Sortera vanor",
+  "Sort habits": "Sortera återkommande uppgifter",
   "Edit item": "Redigera objekt",
-  "Edit habit": "Redigera vana",
+  "Edit habit": "Redigera återkommande uppgift",
   "Edit note": "Redigera anteckning",
   "Edit task": "Redigera uppgift",
   "Calendar": "Kalender",
   "times done": "gånger gjort",
-
   "Group by category": "Gruppera efter kategori",
   "Show last done time": "Visa senast klar tid",
   "Uncategorized": "Okategoriserad",
-
   "This week": "Den här veckan",
   "out of": "av",
   "Overdue": "Försenad",
@@ -300,7 +287,6 @@
   "Mark complete when": "Markera som klar när",
   "all habits are done": "alla vanor är klara",
   "any habit is done": "en vana är klar",
-
   "Current streak": "Nuvarande serie",
   "Best streak": "Bästa serie",
   "Target": "Mål",
@@ -316,7 +302,6 @@
   "Weeks": "Veckor",
   "Months": "Månader",
   "Years": "År",
-
   "Display": "Visning",
   "Repetitions": "Upprepningar",
   "Time": "Tid",
@@ -348,5 +333,17 @@
   "Exact notification timing": "Exakt aviseringstid",
   "Open alarms & reminders": "Öppna Alarm och påminnelser",
   "On": "På",
-  "Off": "Av"
+  "Off": "Av",
+  "Habit": "Recurring task",
+  "Copy": "Copy",
+  "Paste": "Paste",
+  "Urgency": "Urgency",
+  "Soon": "Soon",
+  "Your overview": "Your overview",
+  "Open tasks": "Open tasks",
+  "Overdue tasks": "Overdue tasks",
+  "Recurring tasks": "Recurring tasks",
+  "Notes ready": "Notes",
+  "Reminders": "Reminders",
+  "Enable reminders in Settings": "Enable reminders in Settings"
 }
