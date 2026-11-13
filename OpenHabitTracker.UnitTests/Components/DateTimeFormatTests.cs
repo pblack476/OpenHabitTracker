@@ -53,6 +53,7 @@ public class DateTimeFormatTests
 
         _ctx.Services.AddScoped(_ => _clientState);
         _ctx.Services.AddScoped(_ => _taskService);
+        _ctx.Services.AddScoped<ContentClipboard>();
         _ctx.Services.AddScoped(_ => _habitService);
         _ctx.Services.AddScoped(_ => Substitute.For<ICategoryService>());
         _ctx.Services.AddScoped<ISearchFilterService>(_ => new SearchFilterService());
