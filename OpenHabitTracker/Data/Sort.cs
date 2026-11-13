@@ -12,5 +12,6 @@ public enum Sort
     TimeSpent,
     AverageTimeSpent,
     ElapsedTime,
-    SelectedRatio
+    SelectedRatio,
+    Urgency
 }

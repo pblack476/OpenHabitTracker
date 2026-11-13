@@ -132,10 +132,13 @@
 
             <div class="m-2 fs-4"><i class="bi bi-repeat" aria-hidden="true"></i> @Loc["Habits"]</div>
 
+            <div class="ms-auto d-flex align-items-center gap-1">
+                <button class="@($"btn btn-sm {(ClientState.Settings.SortBy[ContentType.Habit] == Sort.Urgency ? "btn-primary" : "btn-outline-secondary")}")" aria-label="@Loc["Urgency"]" title="@Loc["Urgency"]" @onclick="UseUrgencySort"><i class="bi bi-sort-down-alt" aria-hidden="true"></i><span class="d-none d-xl-inline ms-1">@Loc["Urgency"]</span></button>
             @if (ClientState.Settings.ShowHelp)
             {
                 <button class="btn btn-plain ms-auto m-1" aria-label="@Loc["Help"]" @onclick="@(() => StartTour("habits"))"><i class="bi bi-question-circle"></i></button>
             }
+            </div>
         </div>
 
         DateTime weekStart = CalendarParams.GetFirstDayOfWeek(ClientState.Settings.FirstDayOfWeek, DateTime.Today);
@@ -414,6 +417,12 @@
         }
     }
 
+
+    async Task UseUrgencySort()
+    {
+        ClientState.Settings.SortBy[ContentType.Habit] = Sort.Urgency;
+        await ClientState.UpdateSettings();
+    }
 
     void PasteCopied()
     {

@@ -131,6 +131,7 @@ public static class QueryExtensions
             Sort.Duration => tasks.OrderBy(x => x.Duration),
             Sort.ElapsedTime => tasks.OrderBy(x => x.CompletedAt),
             Sort.PlannedAt => tasks.OrderBy(x => x.PlannedAt),
+            Sort.Urgency => UrgencyOrder.OrderTasks(tasks, DateTime.Now),
             Sort.TimeSpent => tasks.OrderBy(x => x.TimeSpent),
             _ => tasks
         };
@@ -216,6 +217,7 @@ public static class QueryExtensions
             Sort.AverageTimeSpent => habits.OrderBy(x => x.AverageTimeSpent),
             Sort.ElapsedTime => habits.OrderBy(x => x.LastTimeDoneAt),
             Sort.SelectedRatio => habits.OrderByDescending(x => x.GetRatio(queryParameters.SelectedRatio)),
+            Sort.Urgency => UrgencyOrder.OrderHabits(habits, queryParameters.SelectedRatio),
             _ => habits
         };
     }

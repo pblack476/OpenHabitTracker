@@ -241,8 +241,8 @@ public class SettingsModel
             SortBy = new()
             {
                 { ContentType.Note, Sort.Priority },
-                { ContentType.Task, Sort.PlannedAt },
-                { ContentType.Habit, Sort.SelectedRatio }
+                { ContentType.Task, Sort.Urgency },
+                { ContentType.Habit, Sort.Urgency }
             }
         };
     }
