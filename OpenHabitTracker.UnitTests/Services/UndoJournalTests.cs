@@ -35,6 +35,30 @@ public class UndoJournalTests
     }
 
     [Test]
+    public async Task BatchUndoRevertsInReverseOrderAsOneAction()
+    {
+        IDataAccess db = Substitute.For<IDataAccess>();
+        db.DataLocation.Returns(DataLocation.Local);
+        ClientState state = new([db], new MarkdownToHtml(new MarkdownPipelineBuilder().Build()));
+        UndoJournal journal = Create(state);
+        List<int> undone = [];
+
+        await journal.RunBatch("three", () =>
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                int id = i;
+                journal.Record("one", () => { undone.Add(id); return Task.CompletedTask; });
+            }
+            return Task.CompletedTask;
+        });
+
+        Assert.That(journal.Count, Is.EqualTo(1));
+        Assert.That(await journal.UndoLast(), Is.True);
+        Assert.That(undone, Is.EqualTo(new[] { 2, 1, 0 }));
+    }
+
+    [Test]
     public async Task FailedUndoRemainsAvailable()
     {
         IDataAccess db = Substitute.For<IDataAccess>();

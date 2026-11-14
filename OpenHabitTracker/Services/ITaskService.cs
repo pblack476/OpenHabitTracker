@@ -18,5 +18,6 @@ public interface ITaskService
     Task SetStartTime(TaskModel task, DateTime startedAt);
     Task MarkAsDone(TaskModel task);
     Task Reschedule(TaskModel task, DateTime newDay);
+    Task ChangeCategory(TaskModel task, long categoryId);
     Task DeleteTask(TaskModel task);
 }

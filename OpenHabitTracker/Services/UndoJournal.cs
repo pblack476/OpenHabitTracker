@@ -14,6 +14,7 @@ public sealed class UndoJournal(ClientState state)
     private readonly ClientState _state = state;
     private readonly List<Entry> _entries = [];
     private bool _applying;
+    private List<Entry>? _batch;
 
     public event Action? Changed;
 
@@ -25,10 +26,46 @@ public sealed class UndoJournal(ClientState state)
     {
         if (_applying)
             return;
-        _entries.Add(new(label, _state.User.Id, _state.DataLocation, revert));
+        Entry entry = new(label, _state.User.Id, _state.DataLocation, revert);
+        if (_batch is not null)
+        {
+            _batch.Add(entry);
+            return;
+        }
+
+        _entries.Add(entry);
         if (_entries.Count > 25)
             _entries.RemoveAt(0);
         Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Groups multiple successful operations into one Undo. If an operation fails
+    /// halfway through, the completed portion is still reversible.
+    /// </summary>
+    public async Task RunBatch(string label, Func<Task> action)
+    {
+        if (_batch is not null || _applying)
+            throw new InvalidOperationException("Nested undo groups are not supported.");
+
+        _batch = [];
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            List<Entry> completed = _batch;
+            _batch = null;
+            if (completed.Count > 0)
+            {
+                Record(label, async () =>
+                {
+                    for (int i = completed.Count - 1; i >= 0; i--)
+                        await completed[i].Revert();
+                });
+            }
+        }
     }
 
     public async Task<bool> UndoLast()

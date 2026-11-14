@@ -307,6 +307,32 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
         await _notificationScheduler.Rebuild();
     }
 
+    public async Task ChangeCategory(TaskModel task, long categoryId)
+    {
+        if (_clientState.Tasks is null || task.IsDeleted || task.CategoryId == categoryId)
+            return;
+
+        if (categoryId != 0 && _clientState.Categories?.ContainsKey(categoryId) != true)
+            return;
+
+        if (await _clientState.DataAccess.GetTask(task.Id) is not TaskEntity entity)
+            return;
+
+        long oldCategoryId = task.CategoryId;
+        entity.CategoryId = categoryId;
+        await _clientState.DataAccess.UpdateTask(entity);
+
+        if (_clientState.Categories?.TryGetValue(oldCategoryId, out CategoryModel? oldCategory) == true)
+            oldCategory.Tasks.Remove(task);
+        if (_clientState.Categories?.TryGetValue(categoryId, out CategoryModel? newCategory) == true &&
+            !newCategory.Tasks.Contains(task))
+            newCategory.Tasks.Add(task);
+
+        task.CategoryId = categoryId;
+        task.UpdatedAt = entity.UpdatedAt;
+        _undo?.Record("Move task to category", () => ChangeCategory(task, oldCategoryId));
+    }
+
     public async Task DeleteTask(TaskModel task)
     {
         if (_clientState.Tasks is null || task.IsDeleted)
