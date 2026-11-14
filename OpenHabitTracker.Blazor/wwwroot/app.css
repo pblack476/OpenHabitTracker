@@ -477,3 +477,7 @@ html, body {
 .app-inline-editor > .form-control { flex:2 1 10rem; min-width:6rem; }
 .app-inline-editor > .form-select { flex:1 1 8rem; }
 .app-inline-editor > input[type=date],.app-inline-editor > input[type=time] { flex:1 1 9rem; }
+
+// Q06 - batch operations remain in the list context and collapse on mobile.
+.app-batch-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:.45rem; padding:.65rem; margin:.5rem 0; border:1px solid var(--bs-primary-border-subtle); border-radius:12px; background:var(--bs-body-bg); }
+.app-batch-toolbar .form-select { width:auto !important; flex:1 1 8rem; max-width:15rem; }

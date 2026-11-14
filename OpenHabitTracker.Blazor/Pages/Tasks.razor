@@ -22,6 +22,7 @@
 @inject IPriorityService PriorityService
 @inject IJsInterop JsInterop
 @inject IGTourService GTourService
+@inject IServiceProvider Services
 
 <PageTitle>OpenHabitTracker - Tasks</PageTitle>
 
@@ -116,6 +117,7 @@
             <div class="m-2 fs-4"><i class="bi bi-list-task" aria-hidden="true"></i> @Loc["Tasks"]</div>
 
             <div class="ms-auto d-flex align-items-center gap-1">
+                <button class="btn btn-sm btn-outline-secondary" aria-pressed="@_selectionMode" @onclick="ToggleSelectionMode"><i class="bi bi-check2-square" aria-hidden="true"></i> @Loc["Select"]</button>
                 <button class="@($"btn btn-sm {(ClientState.Settings.SortBy[ContentType.Task] == Sort.Urgency ? "btn-primary" : "btn-outline-secondary")}")" aria-label="@Loc["Urgency"]" title="@Loc["Urgency"]" @onclick="UseUrgencySort"><i class="bi bi-sort-down-alt" aria-hidden="true"></i><span class="d-none d-xl-inline ms-1">@Loc["Urgency"]</span></button>
             @if (ClientState.Settings.ShowHelp)
             {
@@ -123,6 +125,39 @@
             }
             </div>
         </div>
+
+        @if (_selectionMode)
+        {
+            <div class="app-batch-toolbar" aria-label="@Loc["Batch actions"]">
+                <span class="fw-bold small">@_selectedTaskIds.Count @Loc["Selected"]</span>
+                <button class="btn btn-sm btn-primary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => ApplyBatch("Complete tasks", CompleteSelected)">@Loc["Mark as done"]</button>
+                <button class="btn btn-sm btn-outline-primary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => ApplyBatch("Reschedule tasks", t => TaskService.Reschedule(t, DateTime.Today))">@Loc["Today"]</button>
+                <InputSelect class="form-select form-select-sm" aria-label="@Loc["Priority"]" @bind-Value="_batchPriority">
+                    @foreach (Priority p in Enum.GetValues<Priority>())
+                    {
+                        <option value="@p">@Loc[PriorityService.GetPriorityName(p)]</option>
+                    }
+                </InputSelect>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => ApplyBatch("Change priority", t => TaskService.QuickUpdate(t, t.Title, _batchPriority, t.PlannedAt))">@Loc["Apply"]</button>
+                <InputSelect class="form-select form-select-sm" aria-label="@Loc["Category"]" @bind-Value="_batchCategoryId">
+                    <option value="0">@Loc["Uncategorized"]</option>
+                    @foreach (CategoryModel c in CategoryService.Categories ?? Array.Empty<CategoryModel>())
+                    {
+                        <option value="@c.Id">@c.Title</option>
+                    }
+                </InputSelect>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => ApplyBatch("Move category", t => TaskService.ChangeCategory(t, _batchCategoryId))">@Loc["Apply"]</button>
+                @if (_confirmBatchDelete)
+                {
+                    <button class="btn btn-sm btn-danger" @onclick="() => ApplyBatch("Delete tasks", t => TaskService.DeleteTask(t))">@Loc["Confirm delete"]</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => _confirmBatchDelete = false">@Loc["Close"]</button>
+                }
+                else
+                {
+                    <button class="btn btn-sm btn-outline-danger" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => _confirmBatchDelete = true">@Loc["Delete"]</button>
+                }
+            </div>
+        }
 
         foreach (var group in GetTaskGroups())
         {
@@ -148,6 +183,10 @@
                     {
                         <div class="@($"{task.Color} app-item-card")">
                             <div class="input-group flex-nowrap">
+                                @if (_selectionMode)
+                                {
+                                    <input type="checkbox" class="form-check-input mx-2 my-auto" aria-label="@task.Title" checked="@_selectedTaskIds.Contains(task.Id)" @onchange="args => SetSelected(task.Id, args)" />
+                                }
 
                                 @if (ClientState.Settings.ShowPriorityDropdown)
                                 {
@@ -230,6 +269,58 @@
 }
 
 @code {
+    bool _selectionMode;
+    bool _confirmBatchDelete;
+    HashSet<long> _selectedTaskIds = [];
+    Priority _batchPriority = Priority.Medium;
+    long _batchCategoryId;
+
+    void ToggleSelectionMode()
+    {
+        _selectionMode = !_selectionMode;
+        _selectedTaskIds.Clear();
+        _confirmBatchDelete = false;
+    }
+
+    void SetSelected(long id, ChangeEventArgs e)
+    {
+        if (e.Value is bool selected && selected)
+            _selectedTaskIds.Add(id);
+        else
+            _selectedTaskIds.Remove(id);
+        _confirmBatchDelete = false;
+    }
+
+    private static async Task CompleteSelected(TaskModel task, ITaskService taskService)
+    {
+        if (task.CompletedAt is null)
+            await taskService.MarkAsDone(task);
+    }
+
+    Task CompleteSelected(TaskModel task) => CompleteSelected(task, TaskService);
+
+    async Task ApplyBatch(string label, Func<TaskModel, Task> action)
+    {
+        TaskModel[] targets = TaskService.Tasks?.Where(t => _selectedTaskIds.Contains(t.Id) && !t.IsDeleted).ToArray() ?? [];
+        if (targets.Length == 0)
+            return;
+
+        async Task Run()
+        {
+            foreach (TaskModel task in targets)
+                await action(task);
+        }
+
+        if (Services.GetService(typeof(UndoJournal)) is UndoJournal journal)
+            await journal.RunBatch(label, Run);
+        else
+            await Run();
+
+        _selectedTaskIds.Clear();
+        _confirmBatchDelete = false;
+        _pageStateChanged = !_pageStateChanged;
+    }
+
     bool _showBulkPaste;
     string _bulkText = string.Empty;
     string? _bulkError;
