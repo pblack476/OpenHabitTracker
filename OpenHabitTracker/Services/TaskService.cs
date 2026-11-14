@@ -6,12 +6,13 @@ using OpenHabitTracker.Query;
 
 namespace OpenHabitTracker.Services;
 
-public class TaskService(ClientState clientState, ISearchFilterService searchFilterService, IAppReview appReview, INotificationScheduler notificationScheduler) : ITaskService
+public class TaskService(ClientState clientState, ISearchFilterService searchFilterService, IAppReview appReview, INotificationScheduler notificationScheduler, UndoJournal? undoJournal = null) : ITaskService
 {
     private readonly ClientState _clientState = clientState;
     private readonly ISearchFilterService _searchFilterService = searchFilterService;
     private readonly IAppReview _appReview = appReview;
     private readonly INotificationScheduler _notificationScheduler = notificationScheduler;
+    private readonly UndoJournal? _undo = undoJournal;
 
     public IReadOnlyCollection<TaskModel>? Tasks => _clientState.Tasks?.Values;
 
@@ -132,6 +133,9 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
             return;
 
         string safeTitle = title.Trim();
+        string previousTitle = task.Title;
+        Priority previousPriority = task.Priority;
+        DateTime? previousSchedule = task.PlannedAt;
         entity.Title = safeTitle;
         entity.Priority = priority;
         entity.PlannedAt = plannedAt;
@@ -141,6 +145,7 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
         task.PlannedAt = plannedAt;
         task.UpdatedAt = entity.UpdatedAt;
         await _notificationScheduler.Rebuild();
+        _undo?.Record("Edit task", () => QuickUpdate(task, previousTitle, previousPriority, previousSchedule));
     }
 
     public async Task Start(TaskModel task)
@@ -187,6 +192,9 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
             return;
 
         bool isCompleted = task.CompletedAt != null;
+        DateTime? oldStarted = task.StartedAt;
+        DateTime? oldCompleted = task.CompletedAt;
+        Dictionary<long, DateTime?> oldItems = task.Items?.ToDictionary(item => item.Id, item => item.DoneAt) ?? new();
 
         DateTime now = DateTime.Now;
         DateTime? dateTime = isCompleted ? null : now;
@@ -220,7 +228,10 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
 
         // Un-completing leaves the items as they are, because some were ticked by hand before the task was done.
         if (task.Items is null || isCompleted)
+        {
+            _undo?.Record("Task completion", () => RestoreCompletion(task, oldStarted, oldCompleted, oldItems));
             return;
+        }
 
         foreach (ItemModel item in task.Items)
         {
@@ -233,6 +244,35 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
                 await _clientState.DataAccess.UpdateItem(itemEntity);
             }
         }
+
+        _undo?.Record("Task completion", () => RestoreCompletion(task, oldStarted, oldCompleted, oldItems));
+    }
+
+    private async Task RestoreCompletion(TaskModel task, DateTime? oldStarted, DateTime? oldCompleted, Dictionary<long, DateTime?> oldItems)
+    {
+        if (await _clientState.DataAccess.GetTask(task.Id) is not TaskEntity entity)
+            return;
+
+        entity.StartedAt = oldStarted;
+        entity.CompletedAt = oldCompleted;
+        await _clientState.DataAccess.UpdateTask(entity);
+        task.StartedAt = oldStarted;
+        task.CompletedAt = oldCompleted;
+        task.UpdatedAt = entity.UpdatedAt;
+
+        foreach (KeyValuePair<long, DateTime?> old in oldItems)
+        {
+            if (task.Items?.FirstOrDefault(item => item.Id == old.Key) is ItemModel model)
+                model.DoneAt = old.Value;
+
+            if (await _clientState.DataAccess.GetItem(old.Key) is ItemEntity item)
+            {
+                item.DoneAt = old.Value;
+                await _clientState.DataAccess.UpdateItem(item);
+            }
+        }
+
+        await _notificationScheduler.Rebuild();
     }
 
     /// <summary>
@@ -247,30 +287,54 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
         if (await _clientState.DataAccess.GetTask(task.Id) is not TaskEntity entity)
             return;
 
+        DateTime? previousSchedule = task.PlannedAt;
         task.PlannedDate = newDay.Date;
         entity.PlannedAt = task.PlannedAt;
         await _clientState.DataAccess.UpdateTask(entity);
+        task.UpdatedAt = entity.UpdatedAt;
+        await _notificationScheduler.Rebuild();
+        _undo?.Record("Reschedule task", () => RestoreSchedule(task, previousSchedule));
+    }
+
+    private async Task RestoreSchedule(TaskModel task, DateTime? plannedAt)
+    {
+        if (await _clientState.DataAccess.GetTask(task.Id) is not TaskEntity entity)
+            return;
+        entity.PlannedAt = plannedAt;
+        await _clientState.DataAccess.UpdateTask(entity);
+        task.PlannedAt = plannedAt;
         task.UpdatedAt = entity.UpdatedAt;
         await _notificationScheduler.Rebuild();
     }
 
     public async Task DeleteTask(TaskModel task)
     {
-        if (_clientState.Tasks is null)
+        if (_clientState.Tasks is null || task.IsDeleted)
             return;
 
+        if (await _clientState.DataAccess.GetTask(task.Id) is not TaskEntity taskEntity)
+            return;
+
+        taskEntity.IsDeleted = true;
+        await _clientState.DataAccess.UpdateTask(taskEntity);
         task.IsDeleted = true;
-
-        // add to TrashedTasks if it is not null (if TrashedTasks is null, it will add this on Initialize)
+        task.UpdatedAt = taskEntity.UpdatedAt;
         _clientState.TrashedTasks?.Add(task);
+        await _notificationScheduler.Rebuild();
 
-        if (await _clientState.DataAccess.GetTask(task.Id) is TaskEntity taskEntity)
-        {
-            taskEntity.IsDeleted = true;
-            await _clientState.DataAccess.UpdateTask(taskEntity);
-            task.UpdatedAt = taskEntity.UpdatedAt;
-        }
+        _undo?.Record("Delete task", () => RestoreDeletedTask(task));
+    }
 
+    private async Task RestoreDeletedTask(TaskModel task)
+    {
+        if (await _clientState.DataAccess.GetTask(task.Id) is not TaskEntity entity)
+            return;
+
+        entity.IsDeleted = false;
+        await _clientState.DataAccess.UpdateTask(entity);
+        task.IsDeleted = false;
+        task.UpdatedAt = entity.UpdatedAt;
+        _clientState.TrashedTasks?.Remove(task);
         await _notificationScheduler.Rebuild();
     }
 }
