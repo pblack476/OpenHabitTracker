@@ -74,11 +74,11 @@ public class LocalBackupManagerTests
         string workspace = Path.Combine(_folder, "workspace-v1");
         Directory.CreateDirectory(workspace);
         string preferences = Path.Combine(workspace, "user.json");
-        File.WriteAllText(preferences, "{\\"Pinned\\":[\\"tasks:1\\"]}");
+        File.WriteAllText(preferences, """{"Pinned":["tasks:1"]}""");
 
         LocalBackupManager manager = new(_database);
         string snapshot = manager.BackupNow(new DateTime(2026, 11, 14, 9, 0, 0))!;
-        File.WriteAllText(preferences, "{\\"Pinned\\":[]}");
+        File.WriteAllText(preferences, """{"Pinned":[]}""");
 
         manager.Restore(Path.GetFileName(snapshot), new DateTime(2026, 11, 14, 10, 0, 0));
         Assert.That(File.ReadAllText(preferences), Does.Contain("tasks:1"));
