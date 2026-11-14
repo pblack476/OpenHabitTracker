@@ -11,6 +11,7 @@ public static class Startup
     {
         services.AddScoped<IJsInterop, JsInterop>();
         services.AddScoped<IRuntimeClientData, RuntimeClientData>();
+        services.AddScoped<IWorkspaceStorage, BrowserWorkspaceStorage>();
         services.AddScoped<PersonalWorkspaceState>();
         services.AddScoped<ITaskReminderOverrides, PersonalReminderOverrides>();
 

@@ -11,7 +11,7 @@ namespace OpenHabitTracker.Blazor;
 /// SQLite schema. Account-scoped to prevent cross-user pin/template leakage.
 /// Existing notes, tasks and history are never stored or modified here.
 /// </summary>
-public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState state)
+public sealed class PersonalWorkspaceState(IWorkspaceStorage storage, ClientState state)
 {
     public sealed class SavedView
     {
@@ -48,7 +48,7 @@ public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState sta
         public List<TaskTemplate> Templates { get; set; } = [];
     }
 
-    private readonly IJsInterop _js = jsInterop;
+    private readonly IWorkspaceStorage _storage = storage;
     private readonly ClientState _state = state;
     private string? _scope;
     private WorkspaceData _data = new();
@@ -64,7 +64,7 @@ public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState sta
         if (_scope == scope)
             return;
 
-        string? raw = await _js.GetWorkspaceState(scope);
+        string? raw = await _storage.Read(scope);
         try
         {
             _data = string.IsNullOrWhiteSpace(raw) ? new() :
@@ -85,7 +85,7 @@ public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState sta
         if (!IsLoaded)
             await Load();
 
-        await _js.SetWorkspaceState(CurrentScope, JsonSerializer.Serialize(_data));
+        await _storage.Write(CurrentScope, JsonSerializer.Serialize(_data));
     }
 
     private static string PinKey(string kind, long id) => kind + ":" + id;
