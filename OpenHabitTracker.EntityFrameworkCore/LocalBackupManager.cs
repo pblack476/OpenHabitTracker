@@ -271,7 +271,10 @@ public sealed class LocalBackupManager(string databasePath)
             using SqliteConnection connection = Open(path, SqliteOpenMode.ReadOnly);
             using SqliteCommand command = connection.CreateCommand();
             command.CommandText = "PRAGMA integrity_check;";
-            return string.Equals(command.ExecuteScalar() as string, "ok", StringComparison.OrdinalIgnoreCase);
+            bool healthy = string.Equals(command.ExecuteScalar() as string, "ok", StringComparison.OrdinalIgnoreCase);
+            if (healthy && requireChecksum)
+                VerifyWorkspaceFiles(path);
+            return healthy;
         }
         catch (Exception)
         {
