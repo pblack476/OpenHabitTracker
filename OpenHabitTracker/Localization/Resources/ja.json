@@ -357,5 +357,12 @@
   "New note": "New note",
   "New task": "New task",
   "New recurring task": "New recurring task",
-  "Keyboard shortcuts": "Keyboard shortcuts"
+  "Keyboard shortcuts": "Keyboard shortcuts",
+  "No tasks planned": "No tasks scheduled for this day",
+  "Unscheduled tasks": "Tasks without a date",
+  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
+  "Schedule for selected day": "Schedule for selected day",
+  "Estimated from repeat interval": "Estimated from repeat interval",
+  "Previous": "Previous",
+  "Next": "Next"
 }

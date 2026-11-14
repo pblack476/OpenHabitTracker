@@ -357,5 +357,12 @@
   "New note": "Nova nota",
   "New task": "Nova tarefa",
   "New recurring task": "Nova tarefa recorrente",
-  "Keyboard shortcuts": "Atalhos de teclado"
+  "Keyboard shortcuts": "Atalhos de teclado",
+  "No tasks planned": "Nenhuma tarefa agendada para este dia",
+  "Unscheduled tasks": "Tarefas sem data",
+  "Unscheduled calendar explanation": "Tarefas sem data aparecem aqui. Selecione um dia no calendário para agendá-las.",
+  "Schedule for selected day": "Agendar para o dia selecionado",
+  "Estimated from repeat interval": "Previsão pelo intervalo de repetição",
+  "Previous": "Anterior",
+  "Next": "Próximo"
 }
