@@ -481,3 +481,24 @@ html, body {
 // Q06 - batch operations remain in the list context and collapse on mobile.
 .app-batch-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:.45rem; padding:.65rem; margin:.5rem 0; border:1px solid var(--bs-primary-border-subtle); border-radius:12px; background:var(--bs-body-bg); }
 .app-batch-toolbar .form-select { width:auto !important; flex:1 1 8rem; max-width:15rem; }
+
+/* Q10: task calendar with accessible day selection and a separate agenda. */
+.app-planner { padding:.65rem 1rem 2rem; width:100%; }
+.app-planner-header { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:1rem; }
+.app-planner-header h1 { margin:0; font-weight:750; letter-spacing:-.035em; font-size:clamp(1.4rem,2vw,2rem); }
+.app-calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.3rem; margin:.5rem 0 1rem; }
+.app-calendar-day {
+    min-width:0; min-height:5.4rem; display:flex; flex-direction:column; gap:.35rem; align-items:flex-start;
+    border-radius:12px !important; background:var(--bs-body-bg); color:var(--bs-body-color);
+    border:1px solid var(--bs-border-color-translucent); padding:.55rem; text-align:left;
+}
+.app-calendar-day:hover { border-color:var(--bs-primary); }
+.app-calendar-day[data-selected="true"] { border:2px solid var(--bs-primary); background:var(--bs-primary-bg-subtle); }
+.app-calendar-day[data-in-month="false"] { opacity:.55; }
+.app-calendar-day[data-today="true"] .app-calendar-date { color:var(--bs-primary); font-weight:800; }
+.app-calendar-date { font-size:.95rem; font-weight:600; }
+.app-calendar-count { font-size:.74rem; padding:.12rem .35rem; border-radius:999px; background:var(--bs-primary-bg-subtle); color:var(--bs-primary-text-emphasis); }
+.app-calendar-weekdays { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); color:var(--bs-secondary-color); font-size:.75rem; font-weight:650; }
+.app-calendar-weekdays span { text-align:center; }
+.app-calendar-agenda { display:grid; gap:.45rem; margin:.65rem 0; }
+@media(max-width:650px){ .app-calendar-grid { gap:.14rem; } .app-calendar-day { min-height:3.9rem; padding:.3rem; } .app-calendar-date { font-size:.8rem; } .app-calendar-count { font-size:.65rem; } }

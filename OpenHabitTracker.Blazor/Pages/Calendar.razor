@@ -1,0 +1,94 @@
+@page "/calendar"
+@using OpenHabitTracker.Data.Models
+@using OpenHabitTracker.Query
+@using OpenHabitTracker.Services
+@using OpenHabitTracker.App
+@inject ClientState ClientState
+@inject ITaskService TaskService
+@inject IStringLocalizer Loc
+
+<PageTitle>OpenHabitTracker - @Loc["Calendar"]</PageTitle>
+
+<div class="col child-column app-planner">
+    <header class="app-planner-header">
+        <h1><i class="bi bi-calendar3 me-2" aria-hidden="true"></i>@Loc["Calendar"]</h1>
+        <div class="d-flex gap-1 flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => Move(-1)" aria-label="@Loc["Previous"]"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => _selected = DateTime.Today">@Loc["Today"]</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => Move(1)" aria-label="@Loc["Next"]"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+            <button class="@($"btn btn-sm {(_mode == ViewMode.Month ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Month">@Loc["Month"]</button>
+            <button class="@($"btn btn-sm {(_mode == ViewMode.Week ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Week">@Loc["Week"]</button>
+            <button class="@($"btn btn-sm {(_mode == ViewMode.Day ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Day">@Loc["Day"]</button>
+        </div>
+    </header>
+    <h2 class="h5 mb-3">@_selected.ToString("MMMM yyyy")</h2>
+
+    @if (_mode != ViewMode.Day)
+    {
+        <div class="app-calendar-weekdays" aria-hidden="true">
+            @foreach (DateTime day in PlannerCalendar.WeekGrid(_selected, ClientState.Settings.FirstDayOfWeek))
+            {
+                <span>@day.ToString("ddd")</span>
+            }
+        </div>
+        <div class="app-calendar-grid" role="group" aria-label="@Loc["Calendar"]">
+            @foreach (DateTime day in VisibleDates)
+            {
+                int count = GetTasksForDay(day).Count;
+                <button @key="day" class="app-calendar-day" type="button" data-selected="@(day == _selected.Date)" data-today="@(day == DateTime.Today)" data-in-month="@(day.Month == _selected.Month)" aria-label="@day.ToString("D")" aria-pressed="@(day == _selected.Date)" @onclick="() => SelectDate(day)">
+                    <span class="app-calendar-date">@day.Day</span>
+                    @if (count > 0)
+                    {
+                        <span class="app-calendar-count">@count</span>
+                    }
+                </button>
+            }
+        </div>
+    }
+
+    <section class="app-today-panel" aria-label="@_selected.ToString("D")">
+        <h2>@_selected.ToString("D") — @GetTasksForDay(_selected).Count @Loc["Tasks"]</h2>
+        <div class="app-calendar-agenda">
+            @foreach (TaskModel task in GetTasksForDay(_selected))
+            {
+                <div class="app-today-entry" @key="task.Id">
+                    <a href="@($"/tasks/{task.Id}")">@task.Title</a>
+                    <span class="app-today-meta">@(task.PlannedTime is null ? "" : task.PlannedAt?.ToShortTimeString())</span>
+                    <button class="btn btn-sm btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="() => TaskService.MarkAsDone(task)"><i class="bi bi-check2" aria-hidden="true"></i></button>
+                </div>
+            }
+            @if (GetTasksForDay(_selected).Count == 0)
+            {
+                <p class="text-body-secondary m-0">@Loc["No tasks planned"]</p>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    private enum ViewMode { Day, Week, Month }
+
+    private ViewMode _mode = ViewMode.Month;
+    private DateTime _selected = DateTime.Today;
+    private IReadOnlyList<DateTime> VisibleDates => _mode == ViewMode.Month
+        ? PlannerCalendar.MonthGrid(_selected, ClientState.Settings.FirstDayOfWeek)
+        : PlannerCalendar.WeekGrid(_selected, ClientState.Settings.FirstDayOfWeek);
+
+    protected override async Task OnInitializedAsync() => await TaskService.Initialize();
+
+    private List<TaskModel> GetTasksForDay(DateTime day)
+        => TaskService.Tasks?.Where(t => !t.IsDeleted && t.CompletedAt is null && t.PlannedAt?.Date == day.Date)
+            .OrderBy(t => t.PlannedAt).ThenByDescending(t => t.Priority).ToList() ?? [];
+
+    private void SelectDate(DateTime date) => _selected = date.Date;
+
+    private void Move(int direction)
+    {
+        _selected = _mode switch
+        {
+            ViewMode.Month => _selected.AddMonths(direction),
+            ViewMode.Week => _selected.AddDays(7 * direction),
+            _ => _selected.AddDays(direction)
+        };
+    }
+}
