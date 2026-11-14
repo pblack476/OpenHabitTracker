@@ -302,6 +302,7 @@ export function registerKeyboardShortcuts(dotnetRef) {
         let action = null;
 
         if (modifier && !event.shiftKey && key === 'k') action = 'search';
+        if (!editing && modifier && !event.shiftKey && key === 'z') action = 'undo';
         if (modifier && event.shiftKey && key === 'n') action = 'new-note';
         if (modifier && event.shiftKey && key === 't') action = 'new-task';
         if (modifier && event.shiftKey && key === 'r') action = 'new-recurring';

@@ -60,6 +60,11 @@
 
             <button @ref="_searchButtonRef" class="nav-link px-2 py-1 ms-3 @(_dynamicComponentType == typeof(Search) ? "active" : "")" @onclick="ToggleSearch" aria-label="@Loc["Search, Filter, Sort"]" aria-expanded="@(_dynamicComponentType == typeof(Search))" data-main-step-6><i class="bi bi-search"></i></button>
 
+            @if (SessionUndo is { Count: > 0 })
+            {
+                <button class="nav-link px-2 py-1 ms-3" aria-label="@Loc["Undo"]" title="@SessionUndo.LastLabel" @onclick="UndoLast"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span class="d-none d-xl-inline ms-1">@Loc["Undo"]</span></button>
+            }
+
             <button @ref="_remindersButtonRef" class="nav-link px-2 py-1 ms-3 @(_dynamicComponentType == typeof(Settings) ? "active" : "")" @onclick="ToggleReminders" aria-label="@Loc["Reminders"]" title="@Loc["Reminders"]" aria-expanded="@(_dynamicComponentType == typeof(Settings))"><i class="bi bi-bell" aria-hidden="true"></i></button>
 
             @if (ClientState.Settings.ShowHelp)
@@ -219,6 +224,17 @@
     private ElementReference _remindersButtonRef;
 
     private DotNetObjectReference<Main>? _shortcutReference;
+    private UndoJournal? SessionUndo => Services.GetService(typeof(UndoJournal)) as UndoJournal;
+    private void OnUndoChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private async Task UndoLast()
+    {
+        if (SessionUndo is { Count: > 0 } journal && await journal.UndoLast())
+        {
+            _stateChanged.Value = !_stateChanged.Value;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
     private ElementReference? _lastOpenerRef;
     private Dictionary<string, Dictionary<string, object>> _dynamicComponentParametersByName = new();
 
@@ -284,6 +300,9 @@
         }
 
         ClientState.SetCulture();
+
+        if (SessionUndo is UndoJournal undo)
+            undo.Changed += OnUndoChanged;
 
         _contentDeleted = EventCallback.Factory.Create(this, OnContentDeleted);
 
@@ -494,6 +513,9 @@
     {
         switch (action)
         {
+            case "undo":
+                await UndoLast();
+                break;
             case "search":
                 ToggleSearch();
                 break;
@@ -534,6 +556,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        if (SessionUndo is UndoJournal undo)
+            undo.Changed -= OnUndoChanged;
         try { await JsInterop.UnregisterKeyboardShortcuts(); }
         catch (JSDisconnectedException) { }
         _shortcutReference?.Dispose();
