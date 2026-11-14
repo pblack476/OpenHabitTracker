@@ -130,15 +130,15 @@
         {
             <div class="app-batch-toolbar" aria-label="@Loc["Batch actions"]">
                 <span class="fw-bold small">@_selectedTaskIds.Count @Loc["Selected"]</span>
-                <button class="btn btn-sm btn-primary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => ApplyBatch("Complete tasks", CompleteSelected)">@Loc["Mark as done"]</button>
-                <button class="btn btn-sm btn-outline-primary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => ApplyBatch("Reschedule tasks", t => TaskService.Reschedule(t, DateTime.Today))">@Loc["Today"]</button>
+                <button class="btn btn-sm btn-primary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="@(() => ApplyBatch("Complete tasks", CompleteSelected))">@Loc["Mark as done"]</button>
+                <button class="btn btn-sm btn-outline-primary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="@(() => ApplyBatch("Reschedule tasks", t => TaskService.Reschedule(t, DateTime.Today)))">@Loc["Today"]</button>
                 <InputSelect class="form-select form-select-sm" aria-label="@Loc["Priority"]" @bind-Value="_batchPriority">
                     @foreach (Priority p in Enum.GetValues<Priority>())
                     {
                         <option value="@p">@Loc[PriorityService.GetPriorityName(p)]</option>
                     }
                 </InputSelect>
-                <button class="btn btn-sm btn-outline-secondary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => ApplyBatch("Change priority", t => TaskService.QuickUpdate(t, t.Title, _batchPriority, t.PlannedAt))">@Loc["Apply"]</button>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="@(() => ApplyBatch("Change priority", t => TaskService.QuickUpdate(t, t.Title, _batchPriority, t.PlannedAt)))">@Loc["Apply"]</button>
                 <InputSelect class="form-select form-select-sm" aria-label="@Loc["Category"]" @bind-Value="_batchCategoryId">
                     <option value="0">@Loc["Uncategorized"]</option>
                     @foreach (CategoryModel c in CategoryService.Categories ?? Array.Empty<CategoryModel>())
@@ -146,10 +146,10 @@
                         <option value="@c.Id">@c.Title</option>
                     }
                 </InputSelect>
-                <button class="btn btn-sm btn-outline-secondary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="() => ApplyBatch("Move category", t => TaskService.ChangeCategory(t, _batchCategoryId))">@Loc["Apply"]</button>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(_selectedTaskIds.Count == 0)" @onclick="@(() => ApplyBatch("Move category", t => TaskService.ChangeCategory(t, _batchCategoryId)))">@Loc["Apply"]</button>
                 @if (_confirmBatchDelete)
                 {
-                    <button class="btn btn-sm btn-danger" @onclick="() => ApplyBatch("Delete tasks", t => TaskService.DeleteTask(t))">@Loc["Confirm delete"]</button>
+                    <button class="btn btn-sm btn-danger" @onclick="@(() => ApplyBatch("Delete tasks", t => TaskService.DeleteTask(t)))">@Loc["Confirm delete"]</button>
                     <button class="btn btn-sm btn-outline-secondary" @onclick="() => _confirmBatchDelete = false">@Loc["Close"]</button>
                 }
                 else
