@@ -13,6 +13,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject ITaskService TaskService
+@inject IItemService ItemService
 @inject ICategoryService CategoryService
 @inject ClientState ClientState
 @inject ContentClipboard ContentClipboard
@@ -145,6 +146,7 @@
                                 {
                                     <small class="input-group-text bg-transparent" data-tasks-step-3>@(task.IsPlannedDateOnly ? task.PlannedAt.Value.ToShortDateString() : task.PlannedAt.Value.Date == DateTime.Now.Date ? task.PlannedAt.Value.ToShortTimeString() : task.PlannedAt.Value.ToShortDateString())</small>
                                 }
+                                <ContentActions OnEdit="() => OpenSelected(task.Id)" OnCopy="() => CopyExisting(task)" OnDuplicate="() => DuplicateExisting(task)" OnToday="() => RescheduleExisting(task, DateTime.Today)" OnTomorrow="() => RescheduleExisting(task, DateTime.Today.AddDays(1))" OnNextWeek="() => RescheduleExisting(task, NextMonday())" CanReschedule="task.CompletedAt is null" />
                                 <button class="@($"btn {(task.CompletedAt is null ? "btn-outline-primary" : "btn-primary")}")" aria-label="@Loc["Mark as done"]" @onclick="() => OnMarkAsDone(task)" data-tasks-step-4><i class="bi bi-check-square"></i></button>
                             </div>
 
@@ -363,6 +365,36 @@
     {
         ClientState.Settings.SortBy[ContentType.Task] = Sort.Urgency;
         await ClientState.UpdateSettings();
+    }
+
+    async Task CopyExisting(TaskModel task)
+    {
+        await ItemService.Initialize(task);
+        ContentClipboard.CopyTask(task, ClientState.User.Id, ClientState.DataLocation);
+    }
+
+    async Task DuplicateExisting(TaskModel task)
+    {
+        if (TaskService.NewTask is not null)
+            return;
+
+        await ItemService.Initialize(task);
+        TaskService.NewTask = ContentClipboard.CloneTask(task);
+        await TaskService.AddTask();
+        _pageStateChanged = !_pageStateChanged;
+    }
+
+    async Task RescheduleExisting(TaskModel task, DateTime day)
+    {
+        await TaskService.Reschedule(task, day);
+        _pageStateChanged = !_pageStateChanged;
+    }
+
+    private static DateTime NextMonday()
+    {
+        DateTime today = DateTime.Today;
+        int days = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
+        return today.AddDays(days == 0 ? 7 : days);
     }
 
     void PasteCopied()

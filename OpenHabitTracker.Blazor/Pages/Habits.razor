@@ -12,6 +12,7 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
 @inject IHabitService HabitService
+@inject IItemService ItemService
 @inject ICategoryService CategoryService
 @inject ClientState ClientState
 @inject ContentClipboard ContentClipboard
@@ -189,6 +190,7 @@
                                 }
 
                                 <button id="habit-item-@habit.Id" class="input-group-text bg-transparent flex-grow-1 text-wrap highlightable d-flex align-items-center" title="@habit.Title" @onclick="() => OpenSelected(habit.Id)" data-habits-step-2><span class="title-clamp">@((MarkupString)SearchFilterService.MarkSearchResults(habit.Title))</span></button>
+                                <ContentActions OnEdit="() => OpenSelected(habit.Id)" OnCopy="() => CopyExisting(habit)" OnDuplicate="() => DuplicateExisting(habit)" />
 
                                 @{
                                     string color = habit.GetRatio(ClientState.Settings.SelectedRatio) switch
@@ -422,6 +424,23 @@
     {
         ClientState.Settings.SortBy[ContentType.Habit] = Sort.Urgency;
         await ClientState.UpdateSettings();
+    }
+
+    async Task CopyExisting(HabitModel habit)
+    {
+        await ItemService.Initialize(habit);
+        ContentClipboard.CopyHabit(habit, ClientState.User.Id, ClientState.DataLocation);
+    }
+
+    async Task DuplicateExisting(HabitModel habit)
+    {
+        if (HabitService.NewHabit is not null)
+            return;
+
+        await ItemService.Initialize(habit);
+        HabitService.NewHabit = ContentClipboard.CloneHabit(habit);
+        await HabitService.AddHabit();
+        _pageStateChanged = !_pageStateChanged;
     }
 
     void PasteCopied()

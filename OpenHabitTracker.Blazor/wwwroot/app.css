@@ -440,3 +440,17 @@ html, body {
 :root[data-openht-density="compact"] .app-shell .app-item-card .title-clamp { -webkit-line-clamp: 1; }
 :root[data-openht-density="compact"] .app-shell .app-kpi { padding: .6rem .75rem; gap: .2rem; }
 :root[data-openht-density="compact"] .app-shell .app-kpi strong { font-size: 1.4rem; }
+
+// Q20: item action menus float over a card instead of being clipped by its border.
+.app-shell .app-item-card { overflow: visible !important; }
+.app-item-actions { position: relative; flex: 0 0 auto; align-self: stretch; }
+.app-item-actions > .btn { height: 100%; border-radius: 0 !important; }
+.app-item-actions .app-actions-popover {
+    position: absolute; top: calc(100% + .25rem); right: 0; z-index: 100;
+    display: grid; gap: .15rem; min-width: 13.5rem; padding: .35rem;
+    background: var(--bs-body-bg); border: 1px solid var(--bs-border-color);
+    border-radius: 12px; box-shadow: 0 10px 32px rgba(0,0,0,.2);
+}
+.app-actions-popover button { display:flex; align-items:center; gap:.6rem; border:0; background:transparent; color:var(--bs-body-color); text-align:start; padding:.55rem .7rem; border-radius:8px !important; width:100%; }
+.app-actions-popover button:hover, .app-actions-popover button:focus-visible { background:var(--bs-primary-bg-subtle); }
+.app-actions-popover .bi { width: 1.1rem; color:var(--bs-secondary-color); }

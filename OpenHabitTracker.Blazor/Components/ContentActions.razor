@@ -1,0 +1,54 @@
+@using OpenHabitTracker.Services
+@inject IStringLocalizer Loc
+
+<div class="app-item-actions">
+    <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="@Loc["Actions"]" title="@Loc["Actions"]" aria-expanded="@_open" aria-haspopup="menu" @onclick="Toggle"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
+    @if (_open)
+    {
+        <div class="app-actions-popover" role="menu" aria-label="@Loc["Actions"]">
+            @if (OnEdit.HasDelegate)
+            {
+                <button type="button" role="menuitem" @onclick="() => Run(OnEdit)"><i class="bi bi-pencil-square" aria-hidden="true"></i>@Loc["Edit item"]</button>
+            }
+            @if (OnDuplicate.HasDelegate)
+            {
+                <button type="button" role="menuitem" @onclick="() => Run(OnDuplicate)"><i class="bi bi-files" aria-hidden="true"></i>@Loc["Duplicate"]</button>
+            }
+            @if (OnCopy.HasDelegate)
+            {
+                <button type="button" role="menuitem" @onclick="() => Run(OnCopy)"><i class="bi bi-clipboard" aria-hidden="true"></i>@Loc["Copy"]</button>
+            }
+            @if (CanReschedule && OnToday.HasDelegate)
+            {
+                <button type="button" role="menuitem" @onclick="() => Run(OnToday)"><i class="bi bi-calendar-check" aria-hidden="true"></i>@Loc["Schedule today"]</button>
+            }
+            @if (CanReschedule && OnTomorrow.HasDelegate)
+            {
+                <button type="button" role="menuitem" @onclick="() => Run(OnTomorrow)"><i class="bi bi-calendar-plus" aria-hidden="true"></i>@Loc["Schedule tomorrow"]</button>
+            }
+            @if (CanReschedule && OnNextWeek.HasDelegate)
+            {
+                <button type="button" role="menuitem" @onclick="() => Run(OnNextWeek)"><i class="bi bi-calendar-week" aria-hidden="true"></i>@Loc["Schedule next week"]</button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnDuplicate { get; set; }
+    [Parameter] public EventCallback OnCopy { get; set; }
+    [Parameter] public EventCallback OnToday { get; set; }
+    [Parameter] public EventCallback OnTomorrow { get; set; }
+    [Parameter] public EventCallback OnNextWeek { get; set; }
+    [Parameter] public bool CanReschedule { get; set; } = true;
+
+    private bool _open;
+    private void Toggle() => _open = !_open;
+
+    private async Task Run(EventCallback callback)
+    {
+        _open = false;
+        await callback.InvokeAsync();
+    }
+}

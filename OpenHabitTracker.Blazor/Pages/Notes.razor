@@ -113,6 +113,7 @@
                                 }
 
                                 <button id="note-item-@note.Id" class="input-group-text bg-transparent flex-grow-1 text-wrap highlightable d-flex align-items-center" title="@note.Title" @onclick="() => OpenSelected(note.Id)" data-notes-step-2><span class="title-clamp">@((MarkupString)SearchFilterService.MarkSearchResults(note.Title))</span></button>
+                                <ContentActions OnEdit="() => OpenSelected(note.Id)" OnCopy="() => CopyExisting(note)" OnDuplicate="() => DuplicateExisting(note)" />
                             </div>
 
                             @if (ClientState.Settings.DisplayNoteContentAsMarkdown)
@@ -305,6 +306,21 @@
         _pageStateChanged = !_pageStateChanged;
     }
 
+
+    void CopyExisting(NoteModel note)
+    {
+        ContentClipboard.CopyNote(note, ClientState.User.Id, ClientState.DataLocation);
+    }
+
+    async Task DuplicateExisting(NoteModel note)
+    {
+        if (NoteService.NewNote is not null)
+            return;
+
+        NoteService.NewNote = ContentClipboard.CloneNote(note);
+        await NoteService.AddNote();
+        _pageStateChanged = !_pageStateChanged;
+    }
 
     void PasteCopied()
     {
