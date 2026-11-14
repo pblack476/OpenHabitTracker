@@ -1,6 +1,7 @@
 using GTour;
 using Microsoft.Extensions.DependencyInjection;
 using OpenHabitTracker.App;
+using OpenHabitTracker.Services;
 
 namespace OpenHabitTracker.Blazor;
 
@@ -11,6 +12,7 @@ public static class Startup
         services.AddScoped<IJsInterop, JsInterop>();
         services.AddScoped<IRuntimeClientData, RuntimeClientData>();
         services.AddScoped<PersonalWorkspaceState>();
+        services.AddScoped<ITaskReminderOverrides, PersonalReminderOverrides>();
 
         services.UseGTour();
         GTourService.Theme = new GTour.Themes.Bootstrap();

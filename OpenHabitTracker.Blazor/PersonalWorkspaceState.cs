@@ -40,6 +40,8 @@ public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState sta
     {
         public HashSet<string> Pinned { get; set; } = [];
         public Dictionary<long, CalendarRecurrenceRule> CalendarRules { get; set; } = [];
+        // Value -1 explicitly disables a reminder; absent => use global settings.
+        public Dictionary<long, int> TaskLeadMinutes { get; set; } = [];
         public HashSet<string> ManualKinds { get; set; } = [];
         public Dictionary<string, List<long>> Orders { get; set; } = [];
         public List<SavedView> Views { get; set; } = [];
@@ -89,6 +91,32 @@ public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState sta
     private static string PinKey(string kind, long id) => kind + ":" + id;
 
     public bool IsPinned(string kind, long id) => IsLoaded && _data.Pinned.Contains(PinKey(kind, id));
+
+    public int GetReminderSelection(long taskId)
+        => IsLoaded && _data.TaskLeadMinutes.TryGetValue(taskId, out int minutes) ? minutes : -2;
+
+    public bool HasIndividualReminders => IsLoaded && _data.TaskLeadMinutes.Values.Any(minutes => minutes >= 0);
+
+    public int? ResolveReminderMinutes(long taskId, int? defaultMinutes)
+    {
+        if (!IsLoaded || !_data.TaskLeadMinutes.TryGetValue(taskId, out int value))
+            return defaultMinutes;
+        return value == -1 ? null : Math.Clamp(value, 0, 43200);
+    }
+
+    public async Task SetReminderSelection(long taskId, int selection)
+    {
+        if (!IsLoaded)
+            await Load();
+        if (selection == -2)
+            _data.TaskLeadMinutes.Remove(taskId);
+        else if (selection == -1 || selection is >= 0 and <= 43200)
+            _data.TaskLeadMinutes[taskId] = selection;
+        else
+            throw new ArgumentOutOfRangeException(nameof(selection));
+
+        await Save();
+    }
 
     public CalendarRecurrenceRule? GetCalendarRule(long habitId)
         => IsLoaded && _data.CalendarRules.TryGetValue(habitId, out CalendarRecurrenceRule? rule) ? rule : null;
