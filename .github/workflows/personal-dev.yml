@@ -23,6 +23,7 @@ jobs:
       - name: Validate Flatpak updater and translations
         run: |
           bash -n scripts/update_flatpak_safe.sh
+          bash -n scripts/install_flatpak_notification_timer.sh scripts/disable_flatpak_notification_timer.sh
           python3 -m py_compile scripts/backup_openhabittracker.py scripts/make_local_flatpak_manifest.py
           python3 - <<'PY'
           import json
