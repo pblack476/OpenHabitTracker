@@ -86,8 +86,8 @@ public class Program
 
             try
             {
-                string saved = backups.Restore(args[restoreArg + 1], DateTime.Now);
-                Console.WriteLine($"Database restored. Pre-restore backup: {saved}");
+                string preRestoreBackup = backups.Restore(args[restoreArg + 1], DateTime.Now);
+                Console.WriteLine($"Database restored. Pre-restore backup: {preRestoreBackup}");
                 return 0;
             }
             catch (Exception exception)
