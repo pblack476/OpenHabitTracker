@@ -14,6 +14,7 @@
 @inject IItemService ItemService
 @inject IStringLocalizer Loc
 @inject IGTourService GTourService
+@inject IServiceProvider Services
 
 <div id="habit-component" class="@Habit.Color" role="region" aria-label="@Loc["Edit habit"]" tabindex="-1" @onkeydown="HandleKeyDown">
     <div class="input-group flex-nowrap" data-habits-step-8>
@@ -64,6 +65,38 @@
             }
         </InputSelect>
     </div>
+
+    @if (Workspace is not null)
+    {
+        <section class="app-calendar-rule mt-2" aria-label="@Loc["Calendar schedule"]">
+            <label class="form-label fw-bold small" for="calendar-rule-@Habit.Id">@Loc["Calendar schedule"]</label>
+            <select id="calendar-rule-@Habit.Id" class="form-select" @bind="_calendarKind" @bind:after="PersistRule">
+                <option value="@CalendarScheduleKind.None">@Loc["Interval only"]</option>
+                <option value="@CalendarScheduleKind.Weekly">@Loc["Specific weekdays"]</option>
+                <option value="@CalendarScheduleKind.MonthlyDay">@Loc["Monthly day"]</option>
+                <option value="@CalendarScheduleKind.FirstBusinessDay">@Loc["First business day"]</option>
+                <option value="@CalendarScheduleKind.LastBusinessDay">@Loc["Last business day"]</option>
+            </select>
+            @if (_calendarKind == CalendarScheduleKind.Weekly)
+            {
+                <div class="d-flex gap-1 mt-2 flex-wrap" role="group" aria-label="@Loc["Specific weekdays"]">
+                    @foreach (DayOfWeek weekday in Enum.GetValues<DayOfWeek>())
+                    {
+                        <button type="button" class="@($"btn btn-sm {(_calendarWeekdays.Contains(weekday) ? "btn-primary" : "btn-outline-secondary")}")" aria-pressed="@_calendarWeekdays.Contains(weekday)" @onclick="() => ToggleWeekday(weekday)">@Loc[weekday.ToString()]</button>
+                    }
+                </div>
+            }
+            @if (_calendarKind == CalendarScheduleKind.MonthlyDay)
+            {
+                <label class="form-label small mt-2" for="calendar-day-@Habit.Id">@Loc["Day of month"]</label>
+                <input id="calendar-day-@Habit.Id" type="number" min="1" max="31" class="form-control" @bind="_calendarDay" @bind:after="PersistRule" />
+            }
+            @if (_calendarKind != CalendarScheduleKind.None)
+            {
+                <small class="d-block text-body-secondary mt-2">@Loc["Calendar-based recurrence overrides the interval for the Today and Calendar views. Existing history is kept."]</small>
+            }
+        </section>
+    }
 
     <div class="input-group" data-habits-step-16>
         <span class="input-group-text bg-transparent">@Loc["Duration"]</span>
@@ -234,6 +267,41 @@
 }
 
 @code {
+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
+    private long _ruleHabitId = -1;
+    private CalendarScheduleKind _calendarKind;
+    private HashSet<DayOfWeek> _calendarWeekdays = [];
+    private int _calendarDay = 1;
+
+    private async Task ToggleWeekday(DayOfWeek weekday)
+    {
+        if (!_calendarWeekdays.Add(weekday))
+            _calendarWeekdays.Remove(weekday);
+
+        // A weekly rule always has at least one selected day.
+        if (_calendarWeekdays.Count == 0)
+            _calendarWeekdays.Add(weekday);
+        await PersistRule();
+    }
+
+    private async Task PersistRule()
+    {
+        if (Workspace is not PersonalWorkspaceState workspace)
+            return;
+        CalendarRecurrenceRule? existing = workspace.GetCalendarRule(Habit.Id);
+        if (_calendarKind == CalendarScheduleKind.Weekly && _calendarWeekdays.Count == 0)
+            _calendarWeekdays.Add(DayOfWeek.Monday);
+
+        await workspace.SetCalendarRule(Habit.Id, new CalendarRecurrenceRule
+        {
+            Kind = _calendarKind,
+            Weekdays = _calendarWeekdays.ToList(),
+            DayOfMonth = Math.Clamp(_calendarDay, 1, 31),
+            SkippedDates = existing?.SkippedDates is HashSet<string> skipped ? new(skipped) : [],
+            PostponedDates = existing?.PostponedDates is Dictionary<string, string> postponed ? new(postponed) : []
+        });
+    }
+
     async Task CopyToClipboard()
     {
         // Also capture lazily loaded checklist items before taking the snapshot.
@@ -284,6 +352,15 @@
 
     protected override void OnParametersSet()
     {
+        if (_ruleHabitId != Habit.Id)
+        {
+            _ruleHabitId = Habit.Id;
+            CalendarRecurrenceRule? rule = Workspace?.GetCalendarRule(Habit.Id);
+            _calendarKind = rule?.Kind ?? CalendarScheduleKind.None;
+            _calendarWeekdays = rule?.Weekdays is List<DayOfWeek> weekdays ? new(weekdays) : [];
+            _calendarDay = rule?.DayOfMonth ?? 1;
+        }
+
         // A timer keeps running in the data after the detail is closed, so the detail shows it again when it opens.
         if (_timer is null && Habit.TimesDone?.LastOrDefault(x => x.CompletedAt is null) is TimeModel running)
             _ = RunTimer(running.StartedAt);
