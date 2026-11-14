@@ -28,15 +28,31 @@ public static class ClosedAppNotificationScanner
         // The GUI delivers its own live notifications. A separate user timer
         // must not send the same alert at the same time.
         string guiLock = Path.Combine(dataDirectory, "gui-active.lock");
+        FileStream guiProbe;
         try
         {
-            using FileStream guiProbe = new(guiLock, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            guiProbe = new FileStream(guiLock, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         }
         catch (IOException)
         {
+            // The open GUI owns the reminder timer; advance the headless scan
+            // cursor so closing the window cannot replay already-seen alerts.
+            try
+            {
+                await DesktopReminderState.Change(dataDirectory, state =>
+                {
+                    state.LastScan = DateTime.Now;
+                    return Task.FromResult(0);
+                });
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine("Could not update background scan cursor: " + exception.Message);
+            }
             return 0;
         }
 
+        using var heldGuiProbe = guiProbe;
         try
         {
             return await DesktopReminderState.Change(dataDirectory, async state =>
