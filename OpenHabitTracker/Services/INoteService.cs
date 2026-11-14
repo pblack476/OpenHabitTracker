@@ -12,5 +12,6 @@ public interface INoteService
     void SetSelectedNote(long? id);
     Task AddNote();
     Task UpdateNote();
+    Task QuickUpdate(NoteModel note, string title, OpenHabitTracker.Data.Priority priority);
     Task DeleteNote(NoteModel note);
 }

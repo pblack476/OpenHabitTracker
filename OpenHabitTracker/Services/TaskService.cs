@@ -123,6 +123,26 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
         await _notificationScheduler.Rebuild();
     }
 
+    public async Task QuickUpdate(TaskModel task, string title, Priority priority, DateTime? plannedAt)
+    {
+        if (string.IsNullOrWhiteSpace(title) || task.IsDeleted)
+            return;
+
+        if (await _clientState.DataAccess.GetTask(task.Id) is not TaskEntity entity)
+            return;
+
+        string safeTitle = title.Trim();
+        entity.Title = safeTitle;
+        entity.Priority = priority;
+        entity.PlannedAt = plannedAt;
+        await _clientState.DataAccess.UpdateTask(entity);
+        task.Title = safeTitle;
+        task.Priority = priority;
+        task.PlannedAt = plannedAt;
+        task.UpdatedAt = entity.UpdatedAt;
+        await _notificationScheduler.Rebuild();
+    }
+
     public async Task Start(TaskModel task)
     {
         if (Tasks is null)

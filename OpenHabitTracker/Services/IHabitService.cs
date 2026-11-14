@@ -14,6 +14,7 @@ public interface IHabitService
     Task LoadAllTimesDone();
     Task AddHabit();
     Task UpdateHabit();
+    Task QuickUpdate(HabitModel habit, string title, OpenHabitTracker.Data.Priority priority);
     Task Start(HabitModel habit);
     Task SetStartTime(HabitModel habit, DateTime startedAt);
     Task MarkAsDone(HabitModel habit, double? quantity = null);

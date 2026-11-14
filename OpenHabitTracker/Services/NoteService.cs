@@ -87,6 +87,23 @@ public class NoteService(ClientState clientState, ISearchFilterService searchFil
         }
     }
 
+    public async Task QuickUpdate(NoteModel note, string title, Priority priority)
+    {
+        if (string.IsNullOrWhiteSpace(title) || note.IsDeleted)
+            return;
+
+        if (await _clientState.DataAccess.GetNote(note.Id) is not NoteEntity entity)
+            return;
+
+        string safeTitle = title.Trim();
+        entity.Title = safeTitle;
+        entity.Priority = priority;
+        await _clientState.DataAccess.UpdateNote(entity);
+        note.Title = safeTitle;
+        note.Priority = priority;
+        note.UpdatedAt = entity.UpdatedAt;
+    }
+
     public async Task DeleteNote(NoteModel note)
     {
         if (_clientState.Notes is null)

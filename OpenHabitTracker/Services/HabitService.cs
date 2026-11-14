@@ -148,6 +148,24 @@ public class HabitService(ClientState clientState, ISearchFilterService searchFi
         await _notificationScheduler.Rebuild();
     }
 
+    public async Task QuickUpdate(HabitModel habit, string title, Priority priority)
+    {
+        if (string.IsNullOrWhiteSpace(title) || habit.IsDeleted)
+            return;
+
+        if (await _clientState.DataAccess.GetHabit(habit.Id) is not HabitEntity entity)
+            return;
+
+        string safeTitle = title.Trim();
+        entity.Title = safeTitle;
+        entity.Priority = priority;
+        await _clientState.DataAccess.UpdateHabit(entity);
+        habit.Title = safeTitle;
+        habit.Priority = priority;
+        habit.UpdatedAt = entity.UpdatedAt;
+        await _notificationScheduler.Rebuild();
+    }
+
     public async Task Start(HabitModel habit)
     {
         if (Habits is null)

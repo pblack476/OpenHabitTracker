@@ -13,6 +13,7 @@ public interface ITaskService
     Task AddTask();
     Task<int> AddTasksFromLines(string text);
     Task UpdateTask();
+    Task QuickUpdate(TaskModel task, string title, OpenHabitTracker.Data.Priority priority, DateTime? plannedAt);
     Task Start(TaskModel task);
     Task SetStartTime(TaskModel task, DateTime startedAt);
     Task MarkAsDone(TaskModel task);
