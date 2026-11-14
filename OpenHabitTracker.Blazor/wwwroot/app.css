@@ -506,3 +506,19 @@ html, body {
 // Q12/Q13: visible reorder state without overriding current urgency sorting.
 .app-shell [draggable="true"] { cursor: grab; }
 .app-shell [draggable="true"]:active { cursor: grabbing; }
+
+/* Q10 calendar completeness: include recurrence and task previews; never clip the last task. */
+.app-planner .app-calendar-day { min-height: 6rem; overflow: hidden; }
+.app-calendar-preview { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; color: var(--bs-body-color); line-height: 1.35; }
+.app-calendar-preview .bi { color: var(--bs-primary); }
+.app-calendar-preview-recurring .bi { color: var(--bs-warning-text-emphasis); }
+.app-calendar-preview-done { text-decoration: line-through; opacity: .65; }
+.app-calendar-more { font-size: .7rem; font-weight: 700; color: var(--bs-primary-text-emphasis); }
+.app-calendar-forecast { font-size: .74rem; color: var(--bs-secondary-color); padding: .18rem .4rem; border-radius: .5rem; border: 1px dashed var(--bs-border-color); }
+.app-calendar-unscheduled { max-height: 24rem; overflow-y: auto; overscroll-behavior-y: contain; }
+@media (max-width: 650px) {
+    .app-planner .app-calendar-day { min-height: 3.9rem; }
+    .app-calendar-preview { display: none; }
+    .app-calendar-more { display: none; }
+    .app-planner .app-calendar-day .app-calendar-count { margin-top: auto; }
+}
