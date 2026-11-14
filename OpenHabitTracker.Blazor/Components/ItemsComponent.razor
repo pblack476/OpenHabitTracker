@@ -47,6 +47,20 @@
             </div>
         </form>
     }
+
+    @if (!IsReadOnly)
+    {
+        <button type="button" class="btn btn-sm btn-outline-secondary mt-1" @onclick="() => _bulkOpen = !_bulkOpen"><i class="bi bi-list-ol" aria-hidden="true"></i> @Loc["Paste multiple"]</button>
+        @if (_bulkOpen)
+        {
+            <div class="app-bulk-paste mt-1">
+                <label for="checklist-bulk-@Items.Id" class="form-label">@Loc["One item per line"]</label>
+                <textarea id="checklist-bulk-@Items.Id" class="form-control" rows="4" @bind="_bulkText" placeholder="@Loc["One item per line"]"></textarea>
+                @if (_bulkError is not null) { <p role="alert" class="text-danger small">@_bulkError</p> }
+                <button class="btn btn-sm btn-primary mt-2" disabled="@string.IsNullOrWhiteSpace(_bulkText)" @onclick="AddMultipleItems">@Loc["Add"]</button>
+            </div>
+        }
+    }
 </div>
 
 @code {
@@ -60,6 +74,27 @@
     InputText? inputElement;
 
     bool shouldFocus;
+    bool _bulkOpen;
+    string _bulkText = string.Empty;
+    string? _bulkError;
+
+    async Task AddMultipleItems()
+    {
+        try
+        {
+            int created = await ItemService.AddItemsFromLines(Items, _bulkText);
+            if (created > 0)
+            {
+                _bulkOpen = false;
+                _bulkText = string.Empty;
+                _bulkError = null;
+            }
+        }
+        catch (ArgumentException exception)
+        {
+            _bulkError = exception.Message;
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {

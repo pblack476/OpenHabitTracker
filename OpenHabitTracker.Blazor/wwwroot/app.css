@@ -467,3 +467,7 @@ html, body {
 .app-today-meta { color:var(--bs-secondary-color); font-size:.82rem; }
 .app-today .app-today-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
 @media (max-width:870px) { .app-today .app-today-grid { grid-template-columns:1fr; } }
+
+// Q05: readable textarea for pasting many tasks/checklist entries at once.
+.app-bulk-paste { padding:.75rem; margin:.5rem 0; background:var(--bs-body-bg); border:1px solid var(--bs-primary-border-subtle); border-radius:12px; }
+.app-bulk-paste textarea { min-height:6rem; max-height:18rem; overflow-y:auto; }
