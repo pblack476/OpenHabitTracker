@@ -12,7 +12,7 @@
 | Q07 | Desfazer | Histórico por sessão, por conta, inclusive lote |
 | Q08 | Central Hoje | Atrasadas, hoje, próximos dias e recorrentes |
 | Q09 | Reagendamento rápido | Hoje, amanhã e próxima segunda-feira |
-| Q10 | Calendário | Mês, semana e dia com abertura e conclusão |
+| Q10 | Calendário | Mês, semana e dia; inclui projeção de recorrências antigas, tarefas sem data e histórico de concluídas |
 | Q11 | Filtros e visualizações salvos | Salvar, aplicar e excluir visualizações no workspace |
 | Q12 | Favoritos/fixados | Fixação de itens nas listas |
 | Q13 | Ordenação manual | Arrastar no modo manual por lista |
