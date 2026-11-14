@@ -39,6 +39,7 @@ public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState sta
     public sealed class WorkspaceData
     {
         public HashSet<string> Pinned { get; set; } = [];
+        public Dictionary<long, CalendarRecurrenceRule> CalendarRules { get; set; } = [];
         public HashSet<string> ManualKinds { get; set; } = [];
         public Dictionary<string, List<long>> Orders { get; set; } = [];
         public List<SavedView> Views { get; set; } = [];
@@ -88,6 +89,63 @@ public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState sta
     private static string PinKey(string kind, long id) => kind + ":" + id;
 
     public bool IsPinned(string kind, long id) => IsLoaded && _data.Pinned.Contains(PinKey(kind, id));
+
+    public CalendarRecurrenceRule? GetCalendarRule(long habitId)
+        => IsLoaded && _data.CalendarRules.TryGetValue(habitId, out CalendarRecurrenceRule? rule) ? rule : null;
+
+    public async Task SetCalendarRule(long habitId, CalendarRecurrenceRule? rule)
+    {
+        if (!IsLoaded)
+            await Load();
+        if (rule is null || rule.Kind == CalendarScheduleKind.None)
+            _data.CalendarRules.Remove(habitId);
+        else
+        {
+            rule.DayOfMonth = Math.Clamp(rule.DayOfMonth, 1, 31);
+            rule.Weekdays = rule.Weekdays.Distinct().ToList();
+            if (rule.Kind == CalendarScheduleKind.Weekly && rule.Weekdays.Count == 0)
+                throw new ArgumentException("Select at least one weekday.");
+            _data.CalendarRules[habitId] = rule;
+        }
+        await Save();
+    }
+
+    public async Task SkipOccurrence(long habitId, DateTime date)
+    {
+        if (!IsLoaded)
+            await Load();
+        if (!_data.CalendarRules.TryGetValue(habitId, out CalendarRecurrenceRule? rule))
+            return;
+        string key = CalendarRecurrenceRule.Key(date);
+        rule.SkippedDates.Add(key);
+        rule.PostponedDates.Remove(key);
+        await Save();
+    }
+
+    public async Task PostponeOccurrence(long habitId, DateTime original, DateTime target)
+    {
+        if (!IsLoaded)
+            await Load();
+        if (!_data.CalendarRules.TryGetValue(habitId, out CalendarRecurrenceRule? rule))
+            return;
+
+        original = original.Date;
+        target = target.Date;
+        if (target <= original || target > original.AddDays(365))
+            throw new ArgumentException("The postponed date must be later and within a year.");
+
+        string source = CalendarRecurrenceRule.Key(original);
+        string destination = CalendarRecurrenceRule.Key(target);
+        if (!CalendarRecurrence.IsDue(rule, original))
+            throw new InvalidOperationException("The original date is not a scheduled occurrence.");
+        rule.PostponedDates[source] = destination;
+        rule.SkippedDates.Remove(source);
+        await Save();
+    }
+
+    public bool RecurringDueOn(long habitId, DateTime date, DateTime? start)
+        => CalendarRecurrence.IsDue(GetCalendarRule(habitId), date, start);
+
 
     public async Task TogglePinned(string kind, long id)
     {
