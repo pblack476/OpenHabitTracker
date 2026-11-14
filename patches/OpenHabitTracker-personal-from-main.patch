@@ -2,7 +2,7 @@ diff --git a/.github/workflows/personal-dev.yml b/.github/workflows/personal-dev
 new file mode 100644
 --- /dev/null
 +++ b/.github/workflows/personal-dev.yml
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,64 @@
 +name: Personal fork checks and Linux build
 +
 +on:
@@ -19,6 +19,13 @@ new file mode 100644
 +    steps:
 +      - name: Checkout
 +        uses: actions/checkout@v4
++
++      - name: Validate source patch against unchanged main
++        run: |
++          git fetch --depth=1 origin main
++          git worktree add --detach "$RUNNER_TEMP/openht-patch-base" origin/main
++          git -C "$RUNNER_TEMP/openht-patch-base" apply --check "$GITHUB_WORKSPACE/patches/OpenHabitTracker-personal-from-main.patch"
++          git worktree remove --force "$RUNNER_TEMP/openht-patch-base"
 +
 +      - name: Set up .NET 10
 +        uses: actions/setup-dotnet@v4
@@ -193,6 +200,53 @@ new file mode 100644
 +
 +As rotinas de backup e restauração do SQLite estão disponíveis separadamente.
 +Não use `flatpak uninstall --delete-data`.
+diff --git a/CALENDAR-FIX.pt-BR.md b/CALENDAR-FIX.pt-BR.md
+new file mode 100644
+--- /dev/null
++++ b/CALENDAR-FIX.pt-BR.md
+@@ -0,0 +1,42 @@
++# Correção do calendário — OpenHabitTracker pessoal
++
++## Corrigido
++
++- Tarefas recorrentes antigas, que utilizam apenas `RepeatInterval`,
++  `RepeatPeriod` e `RepeatCount`, agora aparecem na agenda. Antes só eram
++  exibidas recorrências com regra semanal/mensal explícita.
++- Recorrências com regra calendárica continuam prevalecendo sobre o intervalo
++  antigo, e os dias em que houve execução real permanecem visíveis mesmo
++  quando a regra posteriormente é alterada.
++- As datas de recorrências baseadas somente em intervalo são **estimativas**,
++  identificadas na interface. A repetição é projetada a partir da data de
++  início (ou criação) e distribuída ao longo de cada intervalo. Para dias
++  exatos, configure uma regra de calendário no editor da tarefa recorrente.
++- As tarefas agendadas agora continuam visíveis em seu dia, inclusive as
++  concluídas. As excluídas permanecem ocultas.
++- Tarefas novas **sem data** aparecem no quadro «Tarefas sem data», sem
++  receber uma data arbitrária. O botão «Agendar para o dia selecionado»
++  utiliza o serviço de reagendamento existente.
++- O mês e a semana mostram títulos abreviados das tarefas e recorrências
++  (até três por dia, com indicador para mais entradas). Em telas estreitas,
++  fica só a contagem; clicar no dia mostra todas as entradas.
++
++## Compatibilidade
++
++Somente código de consultas, interface, tradução e testes foram alterados.
++Nenhuma migração, tabela ou campo do SQLite foi criado ou removido, nem houve
++reescrita de IDs, notas, checklists ou históricos de execução.
++
++## Verificações ao atualizar o Flatpak
++
++1. Conferir uma tarefa recorrente já existente, sem regra nova.
++2. Criar uma tarefa sem data: deve aparecer no quadro de tarefas sem data.
++3. Selecionar uma data e agendar a tarefa: ela deve sair do quadro sem data e
++   aparecer no dia escolhido, mantendo o mesmo ID.
++4. Concluir uma tarefa agendada: deve continuar visível na agenda com estado
++   «Concluído».
++5. Verificar tarefas recorrentes com regra semanal específica e histórico.
++6. Conferir as listas e notas antigas, inclusive o último item na rolagem.
++
++Use o instalador seguro `scripts/update_flatpak_safe.sh`, que efetua backup
++verificado antes da atualização. Não desinstale o Flatpak nem apague seus dados.
 diff --git a/DEVELOPMENT.pt-BR.md b/DEVELOPMENT.pt-BR.md
 new file mode 100644
 --- /dev/null
@@ -1744,13 +1798,13 @@ diff --git a/OpenHabitTracker.Blazor/Pages/Calendar.razor b/OpenHabitTracker.Bla
 new file mode 100644
 --- /dev/null
 +++ b/OpenHabitTracker.Blazor/Pages/Calendar.razor
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,207 @@
 +@page "/calendar"
-+@using OpenHabitTracker.Data.Models
++@using OpenHabitTracker.App
 +@using OpenHabitTracker.Data
++@using OpenHabitTracker.Data.Models
 +@using OpenHabitTracker.Query
 +@using OpenHabitTracker.Services
-+@using OpenHabitTracker.App
 +@inject ClientState ClientState
 +@inject ITaskService TaskService
 +@inject IHabitService HabitService
@@ -1763,12 +1817,12 @@ new file mode 100644
 +    <header class="app-planner-header">
 +        <h1><i class="bi bi-calendar3 me-2" aria-hidden="true"></i>@Loc["Calendar"]</h1>
 +        <div class="d-flex gap-1 flex-wrap">
-+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => Move(-1)" aria-label="@Loc["Previous"]"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
-+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => _selected = DateTime.Today">@Loc["Today"]</button>
-+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => Move(1)" aria-label="@Loc["Next"]"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
-+            <button class="@($"btn btn-sm {(_mode == ViewMode.Month ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Month">@Loc["Month"]</button>
-+            <button class="@($"btn btn-sm {(_mode == ViewMode.Week ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Week">@Loc["Week"]</button>
-+            <button class="@($"btn btn-sm {(_mode == ViewMode.Day ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Day">@Loc["Day"]</button>
++            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => Move(-1)" aria-label="@Loc["Previous"]"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
++            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => _selected = DateTime.Today">@Loc["Today"]</button>
++            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => Move(1)" aria-label="@Loc["Next"]"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
++            <button type="button" class="@($"btn btn-sm {(_mode == ViewMode.Month ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Month">@Loc["Month"]</button>
++            <button type="button" class="@($"btn btn-sm {(_mode == ViewMode.Week ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Week">@Loc["Week"]</button>
++            <button type="button" class="@($"btn btn-sm {(_mode == ViewMode.Day ? "btn-primary" : "btn-outline-secondary")}")" @onclick="() => _mode = ViewMode.Day">@Loc["Day"]</button>
 +        </div>
 +    </header>
 +    <h2 class="h5 mb-3">@_selected.ToString("MMMM yyyy")</h2>
@@ -1781,15 +1835,35 @@ new file mode 100644
 +                <span>@day.ToString("ddd")</span>
 +            }
 +        </div>
++
 +        <div class="app-calendar-grid" role="group" aria-label="@Loc["Calendar"]">
 +            @foreach (DateTime day in VisibleDates)
 +            {
-+                int count = GetTasksForDay(day).Count + GetRecurringForDay(day).Count;
-+                <button @key="day" class="app-calendar-day" type="button" data-selected="@(day == _selected.Date)" data-today="@(day == DateTime.Today)" data-in-month="@(day.Month == _selected.Month)" aria-label="@day.ToString("D")" aria-pressed="@(day == _selected.Date)" @onclick="() => SelectDate(day)">
++                IReadOnlyList<TaskModel> scheduled = GetTasksForDay(day);
++                IReadOnlyList<HabitModel> recurring = GetRecurringForDay(day);
++                int count = scheduled.Count + recurring.Count;
++                int hidden = Math.Max(0, count - 3);
++                <button @key="day" class="app-calendar-day" type="button"
++                        data-selected="@(day.Date == _selected.Date)" data-today="@(day.Date == DateTime.Today)"
++                        data-in-month="@(day.Month == _selected.Month)"
++                        aria-label="@($"{day:D} — {count} {Loc["Tasks and habits"]}")"
++                        aria-pressed="@(day.Date == _selected.Date)" @onclick="() => SelectDate(day)">
 +                    <span class="app-calendar-date">@day.Day</span>
 +                    @if (count > 0)
 +                    {
 +                        <span class="app-calendar-count">@count</span>
++                        @foreach (TaskModel task in scheduled.Take(3))
++                        {
++                            <span class="@($"app-calendar-preview {(task.CompletedAt is null ? "" : "app-calendar-preview-done")}")" title="@task.Title"><i class="bi bi-list-task" aria-hidden="true"></i> @task.Title</span>
++                        }
++                        @foreach (HabitModel habit in recurring.Take(Math.Max(0, 3 - scheduled.Count)))
++                        {
++                            <span class="app-calendar-preview app-calendar-preview-recurring" title="@habit.Title"><i class="bi bi-repeat" aria-hidden="true"></i> @habit.Title</span>
++                        }
++                        @if (hidden > 0)
++                        {
++                            <span class="app-calendar-more">+@hidden</span>
++                        }
 +                    }
 +                </button>
 +            }
@@ -1798,27 +1872,72 @@ new file mode 100644
 +
 +    <section class="app-today-panel" aria-label="@_selected.ToString("D")">
 +        <h2>@_selected.ToString("D") — @(GetTasksForDay(_selected).Count + GetRecurringForDay(_selected).Count) @Loc["Tasks and habits"]</h2>
++
 +        <div class="app-calendar-agenda">
 +            @foreach (TaskModel task in GetTasksForDay(_selected))
 +            {
-+                <div class="app-today-entry" @key="task.Id">
-+                    <a href="@($"/tasks/{task.Id}")">@task.Title</a>
-+                    <span class="app-today-meta">@(task.PlannedTime is null ? "" : task.PlannedAt?.ToShortTimeString())</span>
-+                    <button class="btn btn-sm btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="() => TaskService.MarkAsDone(task)"><i class="bi bi-check2" aria-hidden="true"></i></button>
++                <div class="app-today-entry" @key="@($"task-{task.Id}")">
++                    <a href="@($"/tasks/{task.Id}")"><i class="bi bi-list-task" aria-hidden="true"></i> @task.Title</a>
++                    @if (task.CompletedAt is not null)
++                    {
++                        <span class="app-today-meta"><i class="bi bi-check-circle" aria-hidden="true"></i> @Loc["Completed"]</span>
++                    }
++                    else
++                    {
++                        <span class="app-today-meta">@(task.PlannedTime is null ? Loc["Planned"].Value : task.PlannedAt?.ToShortTimeString())</span>
++                        <button class="btn btn-sm btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="() => TaskService.MarkAsDone(task)"><i class="bi bi-check2" aria-hidden="true"></i></button>
++                    }
 +                </div>
 +            }
++
 +            @foreach (HabitModel habit in GetRecurringForDay(_selected))
 +            {
++                CalendarRecurrenceRule? rule = Workspace?.GetCalendarRule(habit.Id);
++                bool completed = CalendarRecurrence.IsCompletedOn(_selected, habit.TimesDone);
 +                <div class="app-today-entry" @key="@($"recurring-{habit.Id}")">
 +                    <a href="@($"/habits/{habit.Id}")"><i class="bi bi-repeat" aria-hidden="true"></i> @habit.Title</a>
-+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => SkipOccurrence(habit, _selected)">@Loc["Skip occurrence"]</button>
-+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => PostponeOccurrence(habit, _selected)">@Loc["Postpone"]</button>
-+                    <button class="btn btn-sm btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="() => CompleteRecurring(habit)"><i class="bi bi-check2" aria-hidden="true"></i></button>
++                    @if (completed)
++                    {
++                        <span class="app-today-meta"><i class="bi bi-check-circle" aria-hidden="true"></i> @Loc["Completed"]</span>
++                    }
++                    else
++                    {
++                        @if (rule is null)
++                        {
++                            <span class="app-calendar-forecast" title="@Loc["Estimated from repeat interval"]">@Loc["Estimated from repeat interval"]</span>
++                        }
++                        @if (rule is not null && _selected.Date >= DateTime.Today)
++                        {
++                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => SkipOccurrence(habit, _selected)">@Loc["Skip occurrence"]</button>
++                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => PostponeOccurrence(habit, _selected)">@Loc["Postpone"]</button>
++                        }
++                        @if (_selected.Date == DateTime.Today)
++                        {
++                            <button class="btn btn-sm btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="() => CompleteRecurring(habit)"><i class="bi bi-check2" aria-hidden="true"></i></button>
++                        }
++                    }
 +                </div>
 +            }
++
 +            @if (GetTasksForDay(_selected).Count == 0 && GetRecurringForDay(_selected).Count == 0)
 +            {
 +                <p class="text-body-secondary m-0">@Loc["No tasks planned"]</p>
++            }
++        </div>
++    </section>
++
++    <section class="app-today-panel mt-3" aria-label="@Loc["Unscheduled tasks"]">
++        <h2><i class="bi bi-inbox" aria-hidden="true"></i> @Loc["Unscheduled tasks"] (@Unscheduled.Count)</h2>
++        <p class="text-body-secondary small">@Loc["Unscheduled calendar explanation"]</p>
++        <div class="app-calendar-agenda app-calendar-unscheduled">
++            @foreach (TaskModel task in Unscheduled)
++            {
++                <div class="app-today-entry" @key="@($"unscheduled-{task.Id}")">
++                    <a href="@($"/tasks/{task.Id}")"><i class="bi bi-list-task" aria-hidden="true"></i> @task.Title</a>
++                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ScheduleTask(task)" title="@_selected.ToString("d")">
++                        <i class="bi bi-calendar-plus" aria-hidden="true"></i> @Loc["Schedule for selected day"]
++                    </button>
++                </div>
 +            }
 +        </div>
 +    </section>
@@ -1829,25 +1948,33 @@ new file mode 100644
 +
 +    private ViewMode _mode = ViewMode.Month;
 +    private DateTime _selected = DateTime.Today;
++    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
++
 +    private IReadOnlyList<DateTime> VisibleDates => _mode == ViewMode.Month
 +        ? PlannerCalendar.MonthGrid(_selected, ClientState.Settings.FirstDayOfWeek)
 +        : PlannerCalendar.WeekGrid(_selected, ClientState.Settings.FirstDayOfWeek);
 +
-+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
++    private IReadOnlyList<TaskModel> GetTasksForDay(DateTime day)
++        => PlannerCalendar.TasksForDay(TaskService.Tasks ?? [], day);
++
++    private IReadOnlyList<HabitModel> GetRecurringForDay(DateTime day)
++        => PlannerCalendar.RecurringForDay(HabitService.Habits ?? [], day,
++            id => Workspace?.GetCalendarRule(id));
++
++    private IReadOnlyList<TaskModel> Unscheduled
++        => PlannerCalendar.Unscheduled(TaskService.Tasks ?? []);
 +
 +    protected override async Task OnInitializedAsync()
 +    {
 +        await TaskService.Initialize();
 +        await HabitService.Initialize();
 +        await HabitService.LoadAllTimesDone();
++        if (Workspace is PersonalWorkspaceState workspace)
++            await workspace.Load();
 +    }
 +
-+    private List<HabitModel> GetRecurringForDay(DateTime day)
-+        => HabitService.Habits?.Where(h => !h.IsDeleted &&
-+            Workspace?.GetCalendarRule(h.Id) is CalendarRecurrenceRule rule &&
-+            CalendarRecurrence.IsDue(rule, day, h.StartAt) &&
-+            !CalendarRecurrence.IsCompletedOn(day, h.TimesDone))
-+            .OrderByDescending(h => h.Priority).ToList() ?? [];
++    private async Task ScheduleTask(TaskModel task)
++        => await TaskService.Reschedule(task, _selected.Date);
 +
 +    private async Task SkipOccurrence(HabitModel habit, DateTime day)
 +    {
@@ -1866,10 +1993,6 @@ new file mode 100644
 +        await HabitService.LoadTimesDone(habit);
 +        await HabitService.MarkAsDone(habit);
 +    }
-+
-+    private List<TaskModel> GetTasksForDay(DateTime day)
-+        => TaskService.Tasks?.Where(t => !t.IsDeleted && t.CompletedAt is null && t.PlannedAt?.Date == day.Date)
-+            .OrderBy(t => t.PlannedAt).ThenByDescending(t => t.Priority).ToList() ?? [];
 +
 +    private void SelectDate(DateTime date) => _selected = date.Date;
 +
@@ -3427,7 +3550,7 @@ diff --git a/OpenHabitTracker.Blazor/Startup.cs b/OpenHabitTracker.Blazor/Startu
 diff --git a/OpenHabitTracker.Blazor/wwwroot/app.css b/OpenHabitTracker.Blazor/wwwroot/app.css
 --- a/OpenHabitTracker.Blazor/wwwroot/app.css
 +++ b/OpenHabitTracker.Blazor/wwwroot/app.css
-@@ -282,3 +282,227 @@ html, body {
+@@ -282,3 +282,243 @@ html, body {
      .blazor-error-boundary::after {
          content: "An error has occurred."
      }
@@ -3655,6 +3778,22 @@ diff --git a/OpenHabitTracker.Blazor/wwwroot/app.css b/OpenHabitTracker.Blazor/w
 +// Q12/Q13: visible reorder state without overriding current urgency sorting.
 +.app-shell [draggable="true"] { cursor: grab; }
 +.app-shell [draggable="true"]:active { cursor: grabbing; }
++
++/* Q10 calendar completeness: include recurrence and task previews; never clip the last task. */
++.app-planner .app-calendar-day { min-height: 6rem; overflow: hidden; }
++.app-calendar-preview { display: block; width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; color: var(--bs-body-color); line-height: 1.35; }
++.app-calendar-preview .bi { color: var(--bs-primary); }
++.app-calendar-preview-recurring .bi { color: var(--bs-warning-text-emphasis); }
++.app-calendar-preview-done { text-decoration: line-through; opacity: .65; }
++.app-calendar-more { font-size: .7rem; font-weight: 700; color: var(--bs-primary-text-emphasis); }
++.app-calendar-forecast { font-size: .74rem; color: var(--bs-secondary-color); padding: .18rem .4rem; border-radius: .5rem; border: 1px dashed var(--bs-border-color); }
++.app-calendar-unscheduled { max-height: 24rem; overflow-y: auto; overscroll-behavior-y: contain; }
++@media (max-width: 650px) {
++    .app-planner .app-calendar-day { min-height: 3.9rem; }
++    .app-calendar-preview { display: none; }
++    .app-calendar-more { display: none; }
++    .app-planner .app-calendar-day .app-calendar-count { margin-top: auto; }
++}
 diff --git a/OpenHabitTracker.Blazor/wwwroot/jsInterop.js b/OpenHabitTracker.Blazor/wwwroot/jsInterop.js
 --- a/OpenHabitTracker.Blazor/wwwroot/jsInterop.js
 +++ b/OpenHabitTracker.Blazor/wwwroot/jsInterop.js
@@ -4066,6 +4205,120 @@ diff --git a/OpenHabitTracker.UnitTests/Components/NoteComponentTests.cs b/OpenH
          _ctx.Services.AddSingleton(Substitute.For<IGTourService>());
  
          _note = new NoteModel { Title = "My Note", Content = "**bold**", ContentMarkdown = "<strong>bold</strong>" };
+diff --git a/OpenHabitTracker.UnitTests/Components/PlannerCalendarPageTests.cs b/OpenHabitTracker.UnitTests/Components/PlannerCalendarPageTests.cs
+new file mode 100644
+--- /dev/null
++++ b/OpenHabitTracker.UnitTests/Components/PlannerCalendarPageTests.cs
+@@ -0,0 +1,109 @@
++using Bunit;
++using Markdig;
++using Microsoft.AspNetCore.Components.Web;
++using Microsoft.Extensions.DependencyInjection;
++using Microsoft.Extensions.Localization;
++using NSubstitute;
++using OpenHabitTracker.App;
++using OpenHabitTracker.Blazor;
++using OpenHabitTracker.Data;
++using OpenHabitTracker.Data.Models;
++using OpenHabitTracker.Services;
++
++namespace OpenHabitTracker.UnitTests.Components;
++
++[TestFixture]
++public class PlannerCalendarPageTests
++{
++    private BunitContext _ctx = null!;
++    private ITaskService _tasks = null!;
++    private IHabitService _habits = null!;
++
++    [SetUp]
++    public void SetUp()
++    {
++        _ctx = new BunitContext();
++        IDataAccess data = Substitute.For<IDataAccess>();
++        data.DataLocation.Returns(DataLocation.Local);
++        ClientState state = new([data], new MarkdownToHtml(new MarkdownPipelineBuilder().Build()));
++        state.Settings.ShowHelp = false;
++        _tasks = Substitute.For<ITaskService>();
++        _habits = Substitute.For<IHabitService>();
++
++        IStringLocalizer localizer = Substitute.For<IStringLocalizer>();
++        localizer[Arg.Any<string>()].Returns(c => new LocalizedString(c.RequiredArg<string>(), c.RequiredArg<string>()));
++        _ctx.Services.AddScoped(_ => state);
++        _ctx.Services.AddScoped(_ => _tasks);
++        _ctx.Services.AddScoped(_ => _habits);
++        _ctx.Services.AddSingleton(localizer);
++    }
++
++    [TearDown]
++    public void TearDown() => _ctx.Dispose();
++
++    [Test]
++    public void LegacyRecurringTaskIsRenderedInDayAgendaWithoutRule()
++    {
++        HabitModel legacy = new()
++        {
++            Id = 42,
++            Title = "Recurring without new rule",
++            CreatedAt = DateTime.Today.AddDays(-2),
++            RepeatPeriod = Period.Day,
++            RepeatInterval = 1,
++            TimesDone = []
++        };
++        _tasks.Tasks.Returns(Array.Empty<TaskModel>());
++        _habits.Habits.Returns(new[] { legacy });
++
++        IRenderedComponent<OpenHabitTracker.Blazor.Pages.Calendar> cut =
++            _ctx.Render<OpenHabitTracker.Blazor.Pages.Calendar>();
++
++        Assert.Multiple(() =>
++        {
++            Assert.That(cut.FindAll(".app-calendar-preview-recurring"), Is.Not.Empty);
++            Assert.That(cut.FindAll(".app-calendar-agenda a[href='/habits/42']"), Has.Count.EqualTo(1));
++            Assert.That(cut.Markup, Does.Contain("Recurring without new rule"));
++        });
++    }
++
++    [Test]
++    public async Task NewTaskWithoutDateIsVisibleAndCanBeScheduledForSelectedDay()
++    {
++        TaskModel newTask = new() { Id = 7, Title = "New unplanned task", CreatedAt = DateTime.Now };
++        _tasks.Tasks.Returns(new[] { newTask });
++        _habits.Habits.Returns(Array.Empty<HabitModel>());
++
++        IRenderedComponent<OpenHabitTracker.Blazor.Pages.Calendar> cut =
++            _ctx.Render<OpenHabitTracker.Blazor.Pages.Calendar>();
++
++        Assert.That(cut.FindAll(".app-calendar-unscheduled a[href='/tasks/7']"), Has.Count.EqualTo(1));
++        await cut.Find(".app-calendar-unscheduled button").ClickAsync(new MouseEventArgs());
++
++        await _tasks.Received(1).Reschedule(newTask, DateTime.Today);
++    }
++
++    [Test]
++    public void AlreadyCompletedTaskIsStillVisibleOnPlannedDay()
++    {
++        TaskModel done = new()
++        {
++            Id = 91,
++            Title = "Already done",
++            PlannedAt = DateTime.Today.AddHours(10),
++            CompletedAt = DateTime.Today.AddHours(11)
++        };
++        _tasks.Tasks.Returns(new[] { done });
++        _habits.Habits.Returns(Array.Empty<HabitModel>());
++
++        IRenderedComponent<OpenHabitTracker.Blazor.Pages.Calendar> cut =
++            _ctx.Render<OpenHabitTracker.Blazor.Pages.Calendar>();
++
++        Assert.Multiple(() =>
++        {
++            Assert.That(cut.FindAll(".app-calendar-agenda a[href='/tasks/91']"), Has.Count.EqualTo(1));
++            Assert.That(cut.Find(".app-calendar-agenda").TextContent, Does.Contain("Completed"));
++            Assert.That(cut.FindAll(".app-calendar-agenda button"), Is.Empty);
++        });
++    }
++}
 diff --git a/OpenHabitTracker.UnitTests/Data/CalendarRecurrenceTests.cs b/OpenHabitTracker.UnitTests/Data/CalendarRecurrenceTests.cs
 new file mode 100644
 --- /dev/null
@@ -4337,8 +4590,10 @@ diff --git a/OpenHabitTracker.UnitTests/Query/PlannerCalendarTests.cs b/OpenHabi
 new file mode 100644
 --- /dev/null
 +++ b/OpenHabitTracker.UnitTests/Query/PlannerCalendarTests.cs
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,117 @@
 +using OpenHabitTracker.Query;
++using OpenHabitTracker.Data;
++using OpenHabitTracker.Data.Models;
 +
 +namespace OpenHabitTracker.UnitTests.Query;
 +
@@ -4368,6 +4623,90 @@ new file mode 100644
 +            Assert.That(grid[^1], Is.EqualTo(new DateTime(2026, 11, 14)));
 +        });
 +    }
++
++    [Test]
++    public void ExistingIntervalRecurringTasks_AppearWithoutExplicitCalendarRule()
++    {
++        DateTime anchor = new(2026, 11, 2); // Monday
++        HabitModel daily = new() { Id = 1, Title = "Daily", CreatedAt = anchor, RepeatPeriod = Period.Day, RepeatInterval = 1 };
++        HabitModel weekly = new() { Id = 2, Title = "Weekly", CreatedAt = anchor, RepeatPeriod = Period.Week, RepeatInterval = 1 };
++        HabitModel fortnightly = new() { Id = 3, Title = "Every two weeks", CreatedAt = anchor, RepeatPeriod = Period.Week, RepeatInterval = 2 };
++
++        Assert.Multiple(() =>
++        {
++            Assert.That(PlannerCalendar.RecurringForDay([daily, weekly, fortnightly], anchor, _ => null), Has.Count.EqualTo(3));
++            Assert.That(PlannerCalendar.RecurringForDay([daily, weekly, fortnightly], anchor.AddDays(7), _ => null).Select(h => h.Id),
++                Is.EquivalentTo(new[] { 1L, 2L }));
++            Assert.That(PlannerCalendar.RecurringForDay([daily, weekly, fortnightly], anchor.AddDays(14), _ => null), Has.Count.EqualTo(3));
++        });
++    }
++
++    [Test]
++    public void MultiCompletionInterval_SpreadsOccurrencesWithoutDuplicatingRows()
++    {
++        HabitModel habit = new() { CreatedAt = new DateTime(2026, 11, 2), RepeatPeriod = Period.Week, RepeatInterval = 1, RepeatCount = 3 };
++        DateTime anchor = habit.CreatedAt;
++        Assert.Multiple(() =>
++        {
++            Assert.That(PlannerCalendar.IsLegacyProjectedOccurrence(habit, anchor), Is.True);
++            Assert.That(PlannerCalendar.IsLegacyProjectedOccurrence(habit, anchor.AddDays(1)), Is.False);
++            Assert.That(PlannerCalendar.IsLegacyProjectedOccurrence(habit, anchor.AddDays(2)), Is.True);
++            Assert.That(PlannerCalendar.IsLegacyProjectedOccurrence(habit, anchor.AddDays(4)), Is.True);
++            Assert.That(PlannerCalendar.IsLegacyProjectedOccurrence(habit, anchor.AddDays(7)), Is.True);
++        });
++    }
++
++    [Test]
++    public void MonthlyAnchorAtMonthEnd_ProjectsIntoShortMonths()
++    {
++        HabitModel habit = new() { CreatedAt = new DateTime(2026, 1, 31), RepeatPeriod = Period.Month, RepeatInterval = 1 };
++        Assert.Multiple(() =>
++        {
++            Assert.That(PlannerCalendar.IsLegacyProjectedOccurrence(habit, new DateTime(2026, 2, 28)), Is.True);
++            Assert.That(PlannerCalendar.IsLegacyProjectedOccurrence(habit, new DateTime(2026, 3, 31)), Is.True);
++            Assert.That(PlannerCalendar.IsLegacyProjectedOccurrence(habit, new DateTime(2026, 2, 27)), Is.False);
++        });
++    }
++
++    [Test]
++    public void ExplicitRuleWinsAndCompletedHistoryIsNotHidden()
++    {
++        DateTime anchor = new(2026, 11, 2); // Monday
++        HabitModel habit = new()
++        {
++            CreatedAt = anchor,
++            RepeatPeriod = Period.Day,
++            RepeatInterval = 1,
++            TimesDone = [new TimeModel { StartedAt = anchor.AddDays(1), CompletedAt = anchor.AddDays(1).AddHours(1) }]
++        };
++        CalendarRecurrenceRule wednesday = new() { Kind = CalendarScheduleKind.Weekly, Weekdays = [DayOfWeek.Wednesday] };
++
++        Assert.Multiple(() =>
++        {
++            Assert.That(PlannerCalendar.IsRecurringOn(habit, anchor, wednesday), Is.False);
++            Assert.That(PlannerCalendar.IsRecurringOn(habit, anchor.AddDays(1), wednesday), Is.True); // completed Tuesday
++            Assert.That(PlannerCalendar.IsRecurringOn(habit, anchor.AddDays(2), wednesday), Is.True);
++        });
++    }
++
++    [Test]
++    public void AllScheduledTasksRemainVisibleOnTheirOriginalDaysIncludingCompleted()
++    {
++        DateTime selected = new(2026, 11, 14);
++        TaskModel open = new() { Id = 1, Title = "New", PlannedAt = selected.AddHours(10) };
++        TaskModel completed = new() { Id = 2, Title = "Done", PlannedAt = selected, CompletedAt = selected.AddHours(11) };
++        TaskModel noDate = new() { Id = 3, Title = "No date" };
++        TaskModel deleted = new() { Id = 4, Title = "Deleted", PlannedAt = selected, IsDeleted = true };
++
++        Assert.Multiple(() =>
++        {
++            Assert.That(PlannerCalendar.TasksForDay([open, completed, noDate, deleted], selected).Select(t => t.Id),
++                Is.EquivalentTo(new[] { 1L, 2L }));
++            Assert.That(PlannerCalendar.Unscheduled([open, completed, noDate, deleted]).Select(t => t.Id),
++                Is.EqualTo(new[] { 3L }));
++        });
++    }
++
 +}
 diff --git a/OpenHabitTracker.UnitTests/Query/TodayAgendaTests.cs b/OpenHabitTracker.UnitTests/Query/TodayAgendaTests.cs
 new file mode 100644
@@ -5046,7 +5385,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/cs.json b/OpenHabitTracker/
    "Display": "Zobrazení",
    "Repetitions": "Opakování",
    "Time": "Čas",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Přesný čas oznámení",
    "Open alarms & reminders": "Otevřít Budíky a připomenutí",
    "On": "Zapnuto",
@@ -5075,7 +5414,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/cs.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/da.json b/OpenHabitTracker/Localization/Resources/da.json
 --- a/OpenHabitTracker/Localization/Resources/da.json
@@ -5192,7 +5538,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/da.json b/OpenHabitTracker/
    "Display": "Visning",
    "Repetitions": "Gentagelser",
    "Time": "Tid",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Præcis notifikationstid",
    "Open alarms & reminders": "Åbn Alarmer og påmindelser",
    "On": "Til",
@@ -5221,7 +5567,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/da.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/de.json b/OpenHabitTracker/Localization/Resources/de.json
 --- a/OpenHabitTracker/Localization/Resources/de.json
@@ -5338,7 +5691,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/de.json b/OpenHabitTracker/
    "Display": "Anzeige",
    "Repetitions": "Wiederholungen",
    "Time": "Zeit",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Genaue Benachrichtigungszeit",
    "Open alarms & reminders": "Wecker & Erinnerungen öffnen",
    "On": "Ein",
@@ -5367,7 +5720,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/de.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/en.json b/OpenHabitTracker/Localization/Resources/en.json
 --- a/OpenHabitTracker/Localization/Resources/en.json
@@ -5525,7 +5885,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/en.json b/OpenHabitTracker/
    "Include overdue tasks": "Include overdue tasks",
    "Due today": "Due today",
    "Daily summary": "Daily summary",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Exact notification timing",
    "Open alarms & reminders": "Open alarms & reminders",
    "On": "On",
@@ -5554,7 +5914,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/en.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/es.json b/OpenHabitTracker/Localization/Resources/es.json
 --- a/OpenHabitTracker/Localization/Resources/es.json
@@ -5671,7 +6038,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/es.json b/OpenHabitTracker/
    "Display": "Mostrar",
    "Repetitions": "Repeticiones",
    "Time": "Tiempo",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Hora exacta de las notificaciones",
    "Open alarms & reminders": "Abrir Alarmas y recordatorios",
    "On": "Activada",
@@ -5700,7 +6067,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/es.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/fi.json b/OpenHabitTracker/Localization/Resources/fi.json
 --- a/OpenHabitTracker/Localization/Resources/fi.json
@@ -5817,7 +6191,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/fi.json b/OpenHabitTracker/
    "Display": "Näyttö",
    "Repetitions": "Toistot",
    "Time": "Aika",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Tarkka ilmoitusaika",
    "Open alarms & reminders": "Avaa Hälytykset ja muistutukset",
    "On": "Käytössä",
@@ -5846,7 +6220,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/fi.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/fr.json b/OpenHabitTracker/Localization/Resources/fr.json
 --- a/OpenHabitTracker/Localization/Resources/fr.json
@@ -5963,7 +6344,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/fr.json b/OpenHabitTracker/
    "Display": "Affichage",
    "Repetitions": "Répétitions",
    "Time": "Temps",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Heure exacte des notifications",
    "Open alarms & reminders": "Ouvrir Alarmes et rappels",
    "On": "Activée",
@@ -5992,7 +6373,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/fr.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/hr.json b/OpenHabitTracker/Localization/Resources/hr.json
 --- a/OpenHabitTracker/Localization/Resources/hr.json
@@ -6109,7 +6497,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/hr.json b/OpenHabitTracker/
    "Display": "Prikaz",
    "Repetitions": "Ponavljanja",
    "Time": "Vrijeme",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Točno vrijeme obavijesti",
    "Open alarms & reminders": "Otvori Alarmi i podsjetnici",
    "On": "Uključeno",
@@ -6138,7 +6526,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/hr.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/it.json b/OpenHabitTracker/Localization/Resources/it.json
 --- a/OpenHabitTracker/Localization/Resources/it.json
@@ -6255,7 +6650,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/it.json b/OpenHabitTracker/
    "Display": "Visualizzazione",
    "Repetitions": "Ripetizioni",
    "Time": "Tempo",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Orario esatto delle notifiche",
    "Open alarms & reminders": "Apri Sveglie e promemoria",
    "On": "Attivo",
@@ -6284,7 +6679,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/it.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/ja.json b/OpenHabitTracker/Localization/Resources/ja.json
 --- a/OpenHabitTracker/Localization/Resources/ja.json
@@ -6401,7 +6803,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/ja.json b/OpenHabitTracker/
    "Display": "表示",
    "Repetitions": "繰り返し",
    "Time": "時間",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "正確な通知時刻",
    "Open alarms & reminders": "アラームとリマインダーを開く",
    "On": "オン",
@@ -6430,7 +6832,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/ja.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/ko.json b/OpenHabitTracker/Localization/Resources/ko.json
 --- a/OpenHabitTracker/Localization/Resources/ko.json
@@ -6547,7 +6956,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/ko.json b/OpenHabitTracker/
    "Display": "표시",
    "Repetitions": "반복",
    "Time": "시간",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "정확한 알림 시간",
    "Open alarms & reminders": "알람 및 리마인더 열기",
    "On": "켜짐",
@@ -6576,7 +6985,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/ko.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/nl.json b/OpenHabitTracker/Localization/Resources/nl.json
 --- a/OpenHabitTracker/Localization/Resources/nl.json
@@ -6693,7 +7109,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/nl.json b/OpenHabitTracker/
    "Display": "Weergave",
    "Repetitions": "Herhalingen",
    "Time": "Tijd",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Exacte meldingstijd",
    "Open alarms & reminders": "Wekkers en herinneringen openen",
    "On": "Aan",
@@ -6722,7 +7138,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/nl.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/no.json b/OpenHabitTracker/Localization/Resources/no.json
 --- a/OpenHabitTracker/Localization/Resources/no.json
@@ -6839,7 +7262,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/no.json b/OpenHabitTracker/
    "Display": "Visning",
    "Repetitions": "Gjentagelser",
    "Time": "Tid",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Nøyaktig varslingstid",
    "Open alarms & reminders": "Åpne Alarmer og påminnelser",
    "On": "På",
@@ -6868,7 +7291,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/no.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/pl.json b/OpenHabitTracker/Localization/Resources/pl.json
 --- a/OpenHabitTracker/Localization/Resources/pl.json
@@ -6985,7 +7415,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/pl.json b/OpenHabitTracker/
    "Display": "Wyświetlanie",
    "Repetitions": "Powtórzenia",
    "Time": "Czas",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Dokładny czas powiadomień",
    "Open alarms & reminders": "Otwórz Alarmy i przypomnienia",
    "On": "Włączony",
@@ -7014,7 +7444,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/pl.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/pt.json b/OpenHabitTracker/Localization/Resources/pt.json
 --- a/OpenHabitTracker/Localization/Resources/pt.json
@@ -7176,7 +7613,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/pt.json b/OpenHabitTracker/
    "Include overdue tasks": "Incluir tarefas atrasadas",
    "Due today": "Para hoje",
    "Daily summary": "Resumo diário",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Hora exata das notificações",
    "Open alarms & reminders": "Abrir Alarmes e lembretes",
    "On": "Ativada",
@@ -7205,7 +7642,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/pt.json b/OpenHabitTracker/
 +  "New note": "Nova nota",
 +  "New task": "Nova tarefa",
 +  "New recurring task": "Nova tarefa recorrente",
-+  "Keyboard shortcuts": "Atalhos de teclado"
++  "Keyboard shortcuts": "Atalhos de teclado",
++  "No tasks planned": "Nenhuma tarefa agendada para este dia",
++  "Unscheduled tasks": "Tarefas sem data",
++  "Unscheduled calendar explanation": "Tarefas sem data aparecem aqui. Selecione um dia no calendário para agendá-las.",
++  "Schedule for selected day": "Agendar para o dia selecionado",
++  "Estimated from repeat interval": "Previsão pelo intervalo de repetição",
++  "Previous": "Anterior",
++  "Next": "Próximo"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/sk.json b/OpenHabitTracker/Localization/Resources/sk.json
 --- a/OpenHabitTracker/Localization/Resources/sk.json
@@ -7322,7 +7766,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/sk.json b/OpenHabitTracker/
    "Display": "Zobrazenie",
    "Repetitions": "Opakovania",
    "Time": "Čas",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Presný čas upozornení",
    "Open alarms & reminders": "Otvoriť Budíky a pripomenutia",
    "On": "Zapnuté",
@@ -7351,7 +7795,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/sk.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/sl.json b/OpenHabitTracker/Localization/Resources/sl.json
 --- a/OpenHabitTracker/Localization/Resources/sl.json
@@ -7468,7 +7919,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/sl.json b/OpenHabitTracker/
    "Display": "Prikaz",
    "Repetitions": "Ponovitve",
    "Time": "Čas",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Točen čas obvestil",
    "Open alarms & reminders": "Odpri Alarmi in opomniki",
    "On": "Vklopljeno",
@@ -7497,7 +7948,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/sl.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/sr.json b/OpenHabitTracker/Localization/Resources/sr.json
 --- a/OpenHabitTracker/Localization/Resources/sr.json
@@ -7614,7 +8072,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/sr.json b/OpenHabitTracker/
    "Display": "Prikaz",
    "Repetitions": "Ponavljanja",
    "Time": "Vreme",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Tačno vreme obaveštenja",
    "Open alarms & reminders": "Otvori Alarmi i podsetnici",
    "On": "Uključeno",
@@ -7643,7 +8101,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/sr.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/sv.json b/OpenHabitTracker/Localization/Resources/sv.json
 --- a/OpenHabitTracker/Localization/Resources/sv.json
@@ -7760,7 +8225,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/sv.json b/OpenHabitTracker/
    "Display": "Visning",
    "Repetitions": "Upprepningar",
    "Time": "Tid",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "Exakt aviseringstid",
    "Open alarms & reminders": "Öppna Alarm och påminnelser",
    "On": "På",
@@ -7789,7 +8254,14 @@ diff --git a/OpenHabitTracker/Localization/Resources/sv.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Localization/Resources/zh.json b/OpenHabitTracker/Localization/Resources/zh.json
 --- a/OpenHabitTracker/Localization/Resources/zh.json
@@ -7906,7 +8378,7 @@ diff --git a/OpenHabitTracker/Localization/Resources/zh.json b/OpenHabitTracker/
    "Display": "显示",
    "Repetitions": "重复次数",
    "Time": "时间",
-@@ -348,5 +333,29 @@
+@@ -348,5 +333,36 @@
    "Exact notification timing": "精确通知时间",
    "Open alarms & reminders": "打开闹钟和提醒",
    "On": "开启",
@@ -7935,13 +8407,20 @@ diff --git a/OpenHabitTracker/Localization/Resources/zh.json b/OpenHabitTracker/
 +  "New note": "New note",
 +  "New task": "New task",
 +  "New recurring task": "New recurring task",
-+  "Keyboard shortcuts": "Keyboard shortcuts"
++  "Keyboard shortcuts": "Keyboard shortcuts",
++  "No tasks planned": "No tasks scheduled for this day",
++  "Unscheduled tasks": "Tasks without a date",
++  "Unscheduled calendar explanation": "Tasks without a date are listed here. Select a date on the calendar to schedule them.",
++  "Schedule for selected day": "Schedule for selected day",
++  "Estimated from repeat interval": "Estimated from repeat interval",
++  "Previous": "Previous",
++  "Next": "Next"
  }
 diff --git a/OpenHabitTracker/Query/PlannerCalendar.cs b/OpenHabitTracker/Query/PlannerCalendar.cs
 new file mode 100644
 --- /dev/null
 +++ b/OpenHabitTracker/Query/PlannerCalendar.cs
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,138 @@
 +namespace OpenHabitTracker.Query;
 +
 +public static class PlannerCalendar
@@ -7956,6 +8435,122 @@ new file mode 100644
 +    {
 +        DateTime start = StartOfWeek(new DateTime(month.Year, month.Month, 1), firstDay);
 +        return Enumerable.Range(0, 42).Select(index => start.AddDays(index)).ToArray();
++    }
++
++    /// <summary>
++    /// Calendar entries are independent of the list's HideCompletedTasks filter.
++    /// A completed task remains visible on the day it was scheduled.
++    /// </summary>
++    public static IReadOnlyList<OpenHabitTracker.Data.Models.TaskModel> TasksForDay(
++        IEnumerable<OpenHabitTracker.Data.Models.TaskModel> tasks, DateTime day) =>
++        tasks.Where(task => !task.IsDeleted && task.PlannedAt?.Date == day.Date)
++            .OrderBy(task => task.CompletedAt is not null)
++            .ThenBy(task => task.PlannedAt)
++            .ThenByDescending(task => task.Priority)
++            .ThenBy(task => task.Title, StringComparer.CurrentCultureIgnoreCase)
++            .ToArray();
++
++    /// <summary>
++    /// Do not assign a made-up date to new tasks. Show them separately so they
++    /// can be scheduled from the calendar.
++    /// </summary>
++    public static IReadOnlyList<OpenHabitTracker.Data.Models.TaskModel> Unscheduled(
++        IEnumerable<OpenHabitTracker.Data.Models.TaskModel> tasks) =>
++        tasks.Where(task => !task.IsDeleted && task.CompletedAt is null && task.PlannedAt is null)
++            .OrderByDescending(task => task.Priority)
++            .ThenByDescending(task => task.CreatedAt)
++            .ToArray();
++
++    /// <summary>
++    /// Explicit calendar rules take precedence. Recurring tasks that predate
++    /// the rules feature receive an approximate projection based on their
++    /// existing interval and repeat count. Actual completed days are always
++    /// included, even when their date differs from the projection.
++    /// </summary>
++    public static IReadOnlyList<OpenHabitTracker.Data.Models.HabitModel> RecurringForDay(
++        IEnumerable<OpenHabitTracker.Data.Models.HabitModel> habits,
++        DateTime day, Func<long, OpenHabitTracker.Data.CalendarRecurrenceRule?> getRule) =>
++        habits.Where(habit => IsRecurringOn(habit, day, getRule(habit.Id)))
++            .OrderByDescending(habit => habit.Priority)
++            .ThenBy(habit => habit.Title, StringComparer.CurrentCultureIgnoreCase)
++            .ToArray();
++
++    public static bool IsRecurringOn(OpenHabitTracker.Data.Models.HabitModel habit, DateTime day,
++        OpenHabitTracker.Data.CalendarRecurrenceRule? rule)
++    {
++        if (habit.IsDeleted)
++            return false;
++
++        // Historical completion must never disappear due to a changed rule.
++        if (OpenHabitTracker.Data.CalendarRecurrence.IsCompletedOn(day, habit.TimesDone))
++            return true;
++
++        if (rule is { Kind: not OpenHabitTracker.Data.CalendarScheduleKind.None })
++            return OpenHabitTracker.Data.CalendarRecurrence.IsDue(rule, day, habit.StartAt ?? habit.CreatedAt);
++
++        return IsLegacyProjectedOccurrence(habit, day);
++    }
++
++    /// <summary>
++    /// For interval-only recurrence, spread the expected RepeatCount
++    /// occurrences evenly within each existing repeat period. These are
++    /// projections, not new dates saved to the database. Month/year intervals
++    /// use real calendar lengths rather than fixed 30/365-day approximations.
++    /// </summary>
++    public static bool IsLegacyProjectedOccurrence(OpenHabitTracker.Data.Models.HabitModel habit, DateTime day)
++    {
++        DateTime anchor = (habit.StartAt ?? habit.CreatedAt).Date;
++        DateTime target = day.Date;
++        if (anchor == DateTime.MinValue || target < anchor)
++            return false;
++
++        long interval = Math.Max(1L, habit.RepeatInterval);
++        long repeats = Math.Max(1L, habit.RepeatCount);
++
++        if (habit.RepeatPeriod is OpenHabitTracker.Data.Period.Day or OpenHabitTracker.Data.Period.Week)
++        {
++            long periodDays = interval * (habit.RepeatPeriod == OpenHabitTracker.Data.Period.Week ? 7L : 1L);
++            long offset = (target - anchor).Days % periodDays;
++            return IsExpectedOffset(offset, periodDays, repeats);
++        }
++
++        long intervalMonths = interval * (habit.RepeatPeriod == OpenHabitTracker.Data.Period.Year ? 12L : 1L);
++        long monthsBetween = (target.Year - anchor.Year) * 12L + target.Month - anchor.Month;
++        long blockIndex = monthsBetween / intervalMonths;
++        DateTime periodStart = AddMonthsPreservingAnchor(anchor, blockIndex * intervalMonths);
++        if (target < periodStart)
++        {
++            if (blockIndex == 0)
++                return false;
++            blockIndex--;
++            periodStart = AddMonthsPreservingAnchor(anchor, blockIndex * intervalMonths);
++        }
++
++        DateTime next = AddMonthsPreservingAnchor(anchor, (blockIndex + 1) * intervalMonths);
++        long periodLength = Math.Max(1, (next - periodStart).Days);
++        return IsExpectedOffset((target - periodStart).Days, periodLength, repeats);
++    }
++
++    private static bool IsExpectedOffset(long offset, long days, long repetitions)
++    {
++        if (offset < 0 || offset >= days)
++            return false;
++
++        long slots = Math.Min(repetitions, days);
++        // The integer positions floor(i * days / slots) represent equally
++        // spaced expected completions without iterating through huge intervals.
++        long candidate = (offset * slots + days - 1) / days;
++        return candidate < slots && candidate * days / slots == offset;
++    }
++
++    private static DateTime AddMonthsPreservingAnchor(DateTime anchor, long months)
++    {
++        long monthIndex = (anchor.Year - 1L) * 12 + (anchor.Month - 1L) + months;
++        if (monthIndex >= 9999L * 12)
++            return DateTime.MaxValue.Date;
++        int year = (int)(monthIndex / 12) + 1;
++        int month = (int)(monthIndex % 12) + 1;
++        return new DateTime(year, month, Math.Min(anchor.Day, DateTime.DaysInMonth(year, month)));
 +    }
 +
 +    public static IReadOnlyList<DateTime> WeekGrid(DateTime day, DayOfWeek firstDay)
@@ -9081,7 +9676,7 @@ new file mode 100644
 +| Q07 | Desfazer | Histórico por sessão, por conta, inclusive lote |
 +| Q08 | Central Hoje | Atrasadas, hoje, próximos dias e recorrentes |
 +| Q09 | Reagendamento rápido | Hoje, amanhã e próxima segunda-feira |
-+| Q10 | Calendário | Mês, semana e dia com abertura e conclusão |
++| Q10 | Calendário | Mês, semana e dia; inclui projeção de recorrências antigas, tarefas sem data e histórico de concluídas |
 +| Q11 | Filtros e visualizações salvos | Salvar, aplicar e excluir visualizações no workspace |
 +| Q12 | Favoritos/fixados | Fixação de itens nas listas |
 +| Q13 | Ordenação manual | Arrastar no modo manual por lista |
@@ -9428,7 +10023,7 @@ new file mode 100644
 +if __name__ == "__main__":
 +    sys.exit(main())
 diff --git a/scripts/disable_flatpak_notification_timer.sh b/scripts/disable_flatpak_notification_timer.sh
-new file mode 100644
+new file mode 100755
 --- /dev/null
 +++ b/scripts/disable_flatpak_notification_timer.sh
 @@ -0,0 +1,6 @@
@@ -9439,7 +10034,7 @@ new file mode 100644
 +systemctl --user stop "$UNIT.service" || true
 +echo "Verificação em segundo plano desativada. Notas e tarefas não foram alteradas."
 diff --git a/scripts/install_flatpak_notification_timer.sh b/scripts/install_flatpak_notification_timer.sh
-new file mode 100644
+new file mode 100755
 --- /dev/null
 +++ b/scripts/install_flatpak_notification_timer.sh
 @@ -0,0 +1,47 @@
@@ -9515,7 +10110,7 @@ new file mode 100644
 +print(f"Manifesto local criado: {destination}")
 +print("ID Flatpak preservado: net.openhabittracker.OpenHabitTracker")
 diff --git a/scripts/update_flatpak_safe.sh b/scripts/update_flatpak_safe.sh
-new file mode 100644
+new file mode 100755
 --- /dev/null
 +++ b/scripts/update_flatpak_safe.sh
 @@ -0,0 +1,122 @@
@@ -9526,7 +10121,7 @@ new file mode 100644
 +umask 077
 +
 +APP_ID="net.openhabittracker.OpenHabitTracker"
-+REVISION="29b41c9da22a0bcd0dfc4090c59ca8b286383d78"
++REVISION="31c1cee0a2d0ecf400e9df08dfd6520b59510357"
 +BACKUP_ROOT="$HOME/OpenHabitTracker-backups"
 +CACHE_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}"
 +
