@@ -5,7 +5,7 @@ set -Eeuo pipefail
 umask 077
 
 APP_ID="net.openhabittracker.OpenHabitTracker"
-REVISION="8101a9338aac1cb2dc346b0e9088df7e6eaf6398"
+REVISION="29b41c9da22a0bcd0dfc4090c59ca8b286383d78"
 BACKUP_ROOT="$HOME/OpenHabitTracker-backups"
 CACHE_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}"
 
