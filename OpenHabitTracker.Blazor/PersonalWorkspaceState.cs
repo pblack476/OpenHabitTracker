@@ -115,7 +115,7 @@ public sealed class PersonalWorkspaceState(IJsInterop jsInterop, ClientState sta
         if (!IsLoaded)
             return source;
 
-        IEnumerable<T> pinned = source.OrderByDescending(item => IsPinned(kind, id(item)));
+        IOrderedEnumerable<T> pinned = source.OrderByDescending(item => IsPinned(kind, id(item)));
         if (!IsManual(kind))
             return pinned;
 
