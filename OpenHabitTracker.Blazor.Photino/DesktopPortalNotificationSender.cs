@@ -13,11 +13,14 @@ public static class DesktopPortalNotificationSender
     private const string Path = "/org/freedesktop/portal/desktop";
     private const string Interface = "org.freedesktop.portal.Notification";
 
-    public static async Task Send(NotificationRequest request, bool withButtons = false)
+    public static async Task Send(NotificationRequest request, bool withButtons = false, bool alreadyConnected = false)
     {
         DBusConnection connection = DBusConnection.Session;
-        await connection.ConnectAsync();
+        if (!alreadyConnected)
+            await connection.ConnectAsync();
 
+        MessageBuffer message;
+        {
         using MessageWriter writer = connection.GetMessageWriter();
         writer.WriteMethodCallHeader(destination: Service, path: Path,
             @interface: Interface, member: "AddNotification", signature: "sa{sv}",
@@ -58,7 +61,8 @@ public static class DesktopPortalNotificationSender
             writer.WriteVariant(buttons);
         }
         writer.WriteDictionaryEnd(dictionary);
-
-        await connection.CallMethodAsync(writer.CreateMessage());
+        message = writer.CreateMessage();
+        }
+        await connection.CallMethodAsync(message);
     }
 }

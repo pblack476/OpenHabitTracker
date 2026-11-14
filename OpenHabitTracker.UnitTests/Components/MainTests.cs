@@ -49,6 +49,7 @@ public class MainTests
         _ctx.Services.AddScoped(_ => Substitute.For<INotifications>());
         _ctx.Services.AddScoped(_ => _notificationScheduler);
         _ctx.Services.AddScoped(_ => _notificationRebuildRelay);
+        _ctx.Services.AddScoped(_ => Substitute.For<ITaskService>());
         _ctx.Services.AddSingleton(Substitute.For<IGTourService>());
         _ctx.Services.AddSingleton(loc);
     }

@@ -99,14 +99,14 @@ public static class ClosedAppNotificationScanner
                         string fingerprint = $"u{settingEntity.UserId}-{due.Kind}-{due.TaskId}-{due.NotifyAt.Ticks}";
                         if (state.Sent.ContainsKey(fingerprint)) continue;
 
-                        TaskModel? task = tasks.FirstOrDefault(t => t.Id == due.TaskId);
+                        TaskEntity? task = taskRows.FirstOrDefault(t => t.Id == due.TaskId && t.UserId == settingEntity.UserId);
                         string title = due.Kind == NotificationKind.TaskReminder
                             ? task?.Title ?? "OpenHabitTracker"
                             : settings.Culture.StartsWith("pt", StringComparison.OrdinalIgnoreCase) ? "Pendências de hoje" : "Due today";
                         string body = due.Kind == NotificationKind.TaskReminder
                             ? task?.PlannedAt?.ToString("g") ?? ""
-                            : string.Join(", ", due.TaskIds.Select(id => tasks.FirstOrDefault(t => t.Id == id)?.Title)
-                                .Concat(due.HabitIds.Select(id => habits.FirstOrDefault(h => h.Id == id)?.Title))
+                            : string.Join(", ", due.TaskIds.Select(id => taskRows.FirstOrDefault(t => t.Id == id && t.UserId == settingEntity.UserId)?.Title)
+                                .Concat(due.HabitIds.Select(id => habitRows.FirstOrDefault(h => h.Id == id && h.UserId == settingEntity.UserId)?.Title))
                                 .Where(x => !string.IsNullOrWhiteSpace(x)));
 
                         await DesktopPortalNotificationSender.Send(new NotificationRequest

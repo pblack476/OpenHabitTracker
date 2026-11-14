@@ -55,7 +55,7 @@ public sealed class Notifications(ILogger<Notifications> logger, string dataDire
 
             _routesById[request.Id] = request.Route;
             _titleByRoute[request.Route] = request.Title;
-            await DesktopPortalNotificationSender.Send(request, withButtons: true);
+            await DesktopPortalNotificationSender.Send(request, withButtons: true, alreadyConnected: true);
 
             // A temporary snooze was delivered while the GUI was still running.
             // Remove its headless counterpart before the next background tick.
@@ -102,8 +102,11 @@ public sealed class Notifications(ILogger<Notifications> logger, string dataDire
     }
 
     private static bool TryTaskId(string route, out long taskId)
-        => route.StartsWith("/tasks/", StringComparison.Ordinal) &&
-           long.TryParse(route.Substring("/tasks/".Length), out taskId);
+    {
+        taskId = 0;
+        return route.StartsWith("/tasks/", StringComparison.Ordinal) &&
+               long.TryParse(route.Substring("/tasks/".Length), out taskId);
+    }
 
     private async Task WatchActions(DBusConnection connection)
     {
