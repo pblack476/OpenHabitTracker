@@ -61,6 +61,9 @@ public class Program
         string databasePath = Path.Combine(databaseDirectory, "OpenHT.db");
         LocalBackupManager backups = new(databasePath);
 
+        if (args.Contains("--notification-scan"))
+            return ClosedAppNotificationScanner.Run(databaseDirectory, databasePath).GetAwaiter().GetResult();
+
         if (args.Contains("--list-backups"))
         {
             foreach (LocalBackupManager.Snapshot entry in backups.ListBackups())
@@ -115,6 +118,12 @@ public class Program
             try { backups.BackupIfDue(DateTime.Now); }
             catch (Exception error) { FileLog.Write(databaseDirectory, LogLevel.Error, nameof(LocalBackupManager), error.ToString()); }
         }, null, TimeSpan.FromHours(6), TimeSpan.FromHours(6));
+
+        // Single-instance marker prevents the headless scan from duplicating
+        // a notification already managed by the live GUI timer.
+        using FileStream guiActivity = new(
+            Path.Combine(databaseDirectory, "gui-active.lock"), FileMode.OpenOrCreate,
+            FileAccess.ReadWrite, FileShare.None);
 
         PhotinoBlazorAppBuilder builder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
