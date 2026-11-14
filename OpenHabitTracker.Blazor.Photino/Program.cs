@@ -89,6 +89,9 @@ public class Program
 
             try
             {
+                using FileStream guiRestoreLease = new(
+                    Path.Combine(databaseDirectory, "gui-active.lock"),
+                    FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
                 string preRestoreBackup = backups.Restore(args[restoreArg + 1], DateTime.Now);
                 Console.WriteLine($"Database restored. Pre-restore backup: {preRestoreBackup}");
                 return 0;
@@ -121,9 +124,7 @@ public class Program
 
         // Single-instance marker prevents the headless scan from duplicating
         // a notification already managed by the live GUI timer.
-        using FileStream guiActivity = new(
-            Path.Combine(databaseDirectory, "gui-active.lock"), FileMode.OpenOrCreate,
-            FileAccess.ReadWrite, FileShare.None);
+        using FileStream guiActivity = AcquireGuiLease(databaseDirectory);
 
         PhotinoBlazorAppBuilder builder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
@@ -226,6 +227,23 @@ public class Program
         app.Run();
 
         return 0;
+    }
+
+    static FileStream AcquireGuiLease(string directory)
+    {
+        string path = Path.Combine(directory, "gui-active.lock");
+        for (int attempt = 0; attempt < 40; attempt++)
+        {
+            try
+            {
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (attempt < 39)
+            {
+                System.Threading.Thread.Sleep(250);
+            }
+        }
+        throw new IOException("Could not acquire the graphical application lease.");
     }
 
     static void SaveWindowSettings(PhotinoWindow window, string path)
