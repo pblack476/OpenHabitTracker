@@ -31,4 +31,8 @@ public interface IJsInterop
 
     ValueTask SetVisibleAction(object dotnetRef);
     ValueTask ShowNotification(string title, string body, string route, object dotnetRef);
+    ValueTask<string> GetDensity();
+    ValueTask SetDensity(string density);
+    ValueTask RegisterKeyboardShortcuts(object dotnetRef);
+    ValueTask UnregisterKeyboardShortcuts();
 }

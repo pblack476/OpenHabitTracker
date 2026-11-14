@@ -4,6 +4,9 @@
 @using OpenHabitTracker.Services
 @using GTour.Components
 @using GTour.Abstractions
+@using Microsoft.JSInterop
+@using OpenHabitTracker.Data.Models
+@implements IAsyncDisposable
 
 @inject ILogger<Main> Logger
 @inject ClientState ClientState
@@ -18,6 +21,7 @@
 @inject INotificationScheduler NotificationScheduler
 @inject NotificationRebuildRelay NotificationRebuildRelay
 @inject INotifications Notifications
+@inject IServiceProvider Services
 
 @* Root <div> inside <html><body><app> *@
 
@@ -212,6 +216,8 @@
     private ElementReference _menuButtonRef;
     private ElementReference _searchButtonRef;
     private ElementReference _remindersButtonRef;
+
+    private DotNetObjectReference<Main>? _shortcutReference;
     private ElementReference? _lastOpenerRef;
     private Dictionary<string, Dictionary<string, object>> _dynamicComponentParametersByName = new();
 
@@ -421,6 +427,9 @@
             Logger.LogInformation("MainLayout.OnAfterRenderAsync start");
 
             _windowDimensions = await JsInterop.GetWindowDimensions();
+            await JsInterop.SetDensity(await JsInterop.GetDensity());
+            _shortcutReference = DotNetObjectReference.Create(this);
+            await JsInterop.RegisterKeyboardShortcuts(_shortcutReference);
 
             if (!ClientState.Settings.IsDarkMode)
                 await JsInterop.SetMode("light");
@@ -477,6 +486,57 @@
         {
             _dynamicComponentType = _previousDynamicComponentType;
         }
+    }
+
+    [JSInvokable]
+    public async Task OnGlobalShortcut(string action)
+    {
+        switch (action)
+        {
+            case "search":
+                ToggleSearch();
+                break;
+            case "new-note":
+                if (Services.GetService(typeof(INoteService)) is INoteService noteService)
+                    noteService.NewNote ??= new NoteModel { Color = "bg-info-subtle" };
+                NavigationManager.NavigateTo("/notes");
+                break;
+            case "new-task":
+                if (Services.GetService(typeof(ITaskService)) is ITaskService taskService)
+                    taskService.NewTask ??= new TaskModel { Color = "bg-info-subtle" };
+                NavigationManager.NavigateTo("/tasks");
+                break;
+            case "new-recurring":
+                if (Services.GetService(typeof(IHabitService)) is IHabitService habitService)
+                    habitService.NewHabit ??= new HabitModel { Color = "bg-info-subtle" };
+                NavigationManager.NavigateTo("/habits");
+                break;
+            case "today":
+                NavigationManager.NavigateTo("/");
+                break;
+            case "notes":
+                NavigationManager.NavigateTo("/notes");
+                break;
+            case "tasks":
+                NavigationManager.NavigateTo("/tasks");
+                break;
+            case "recurring":
+                NavigationManager.NavigateTo("/habits");
+                break;
+            case "close-sidebar":
+                _dynamicComponentType = null;
+                break;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JsInterop.UnregisterKeyboardShortcuts(); }
+        catch (JSDisconnectedException) { }
+        _shortcutReference?.Dispose();
+        _shortcutReference = null;
     }
 
     private void ToggleReminders()

@@ -165,6 +165,33 @@ public sealed class JsInterop(IJSRuntime jsRuntime) : IJsInterop, IAsyncDisposab
         await module.InvokeVoidAsync("showNotification", title, body, route, dotnetRef);
     }
 
+    public async ValueTask<string> GetDensity()
+    {
+        IJSObjectReference module = await _moduleTask.Value;
+        return await module.InvokeAsync<string>("getDensity");
+    }
+
+    public async ValueTask SetDensity(string density)
+    {
+        IJSObjectReference module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("setDensity", density);
+    }
+
+    public async ValueTask RegisterKeyboardShortcuts(object dotnetRef)
+    {
+        IJSObjectReference module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("registerKeyboardShortcuts", dotnetRef);
+    }
+
+    public async ValueTask UnregisterKeyboardShortcuts()
+    {
+        if (!_moduleTask.IsValueCreated)
+            return;
+
+        IJSObjectReference module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("unregisterKeyboardShortcuts");
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_moduleTask.IsValueCreated)

@@ -56,6 +56,14 @@
             </InputSelect>
         </div>
 
+        <div class="list-group-item">
+            <label for="density-select" class="form-label small">@Loc["Interface density"]</label>
+            <select id="density-select" class="form-select" value="@_density" @onchange="SaveDensity">
+                <option value="comfortable">@Loc["Comfortable"]</option>
+                <option value="compact">@Loc["Compact"]</option>
+            </select>
+        </div>
+
         <div class="list-group-item" data-settings-step-3>
             <small>@Loc["Start page"]:</small>
             <InputSelect class="form-select" aria-label="@Loc["Start page"]" Value="_settings.StartPage" ValueExpression="() => _settings.StartPage" TValue="string" ValueChanged="SaveStartPage">
@@ -360,6 +368,7 @@
     bool _exactTimingAllowed;
 
     DotNetObjectReference<Settings>? _selfReference;
+    string _density = "comfortable";
 
     protected override async Task OnInitializedAsync()
     {
@@ -374,6 +383,8 @@
         if (!firstRender)
             return;
 
+        _density = await JsInterop.GetDensity();
+        await InvokeAsync(StateHasChanged);
         _selfReference = DotNetObjectReference.Create(this);
 
         await JsInterop.SetVisibleAction(_selfReference);
@@ -397,6 +408,12 @@
     {
         _selfReference?.Dispose();
         _selfReference = null;
+    }
+
+    async Task SaveDensity(ChangeEventArgs args)
+    {
+        _density = args.Value?.ToString() == "compact" ? "compact" : "comfortable";
+        await JsInterop.SetDensity(_density);
     }
 
     static string PermissionName(NotificationPermission permission)

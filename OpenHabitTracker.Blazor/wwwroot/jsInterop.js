@@ -270,3 +270,57 @@ export function showNotification(title, body, route, dotnetRef) {
         dotnetRef.invokeMethodAsync("OnNotificationActivated", route).catch(() => { });
     };
 }
+
+
+// Personal fork - device-local density preference, separate from the SQLite
+// user model. An existing installation never needs a schema migration.
+const densityKey = 'openht-personal-density';
+
+export function getDensity() {
+    try { return window.localStorage.getItem(densityKey) === 'compact' ? 'compact' : 'comfortable'; }
+    catch { return 'comfortable'; }
+}
+
+export function setDensity(density) {
+    const selected = density === 'compact' ? 'compact' : 'comfortable';
+    document.documentElement.setAttribute('data-openht-density', selected);
+    try { window.localStorage.setItem(densityKey, selected); } catch { /* Storage may be disabled */ }
+}
+
+// A single capture listener per application. Never intercept typing,
+// password fields, or browser shortcuts unrelated to this application.
+let appShortcuts = null;
+export function registerKeyboardShortcuts(dotnetRef) {
+    unregisterKeyboardShortcuts();
+    appShortcuts = function (event) {
+        if (event.defaultPrevented || event.isComposing || event.repeat) return;
+        const element = event.target;
+        const editing = element instanceof Element &&
+            element.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]');
+        const modifier = (event.ctrlKey || event.metaKey) && !event.altKey;
+        const key = event.key.toLowerCase();
+        let action = null;
+
+        if (modifier && !event.shiftKey && key === 'k') action = 'search';
+        if (modifier && event.shiftKey && key === 'n') action = 'new-note';
+        if (modifier && event.shiftKey && key === 't') action = 'new-task';
+        if (modifier && event.shiftKey && key === 'r') action = 'new-recurring';
+        if (!editing && event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+            if (key === '0') action = 'today';
+            if (key === '1') action = 'notes';
+            if (key === '2') action = 'tasks';
+            if (key === '3') action = 'recurring';
+        }
+        if (!editing && key === 'escape' && !event.altKey && !event.ctrlKey && !event.metaKey) action = 'close-sidebar';
+        if (!action) return;
+        event.preventDefault();
+        event.stopPropagation();
+        dotnetRef.invokeMethodAsync('OnGlobalShortcut', action).catch(() => {});
+    };
+    document.addEventListener('keydown', appShortcuts, true);
+}
+export function unregisterKeyboardShortcuts() {
+    if (!appShortcuts) return;
+    document.removeEventListener('keydown', appShortcuts, true);
+    appShortcuts = null;
+}
