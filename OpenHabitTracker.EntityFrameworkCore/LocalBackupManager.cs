@@ -75,6 +75,7 @@ public sealed class LocalBackupManager(string databasePath)
             string snapshotPath = Path.Combine(BackupDirectory, backupName);
             if (!IsHealthy(snapshotPath, requireChecksum: true))
                 throw new InvalidDataException("Backup failed checksum or SQLite integrity verification.");
+            VerifyWorkspaceFiles(snapshotPath);
 
             string? emergency = BackupNow(now);
             if (File.Exists(_databasePath) && emergency is null)
@@ -96,6 +97,7 @@ public sealed class LocalBackupManager(string databasePath)
             if (!IsHealthy(_databasePath, requireChecksum: false))
                 throw new InvalidDataException("Restored database failed SQLite integrity verification. The emergency backup was retained.");
 
+            RestoreWorkspaceFiles(snapshotPath);
             return emergency ?? string.Empty;
         }
     }
@@ -132,6 +134,7 @@ public sealed class LocalBackupManager(string databasePath)
             if (!IsHealthy(destinationPath, requireChecksum: true))
                 throw new InvalidDataException("Checksum verification failed after backup finalization.");
 
+            SnapshotWorkspaceFiles(destinationPath);
             PruneVerifiedBackups();
             return destinationPath;
         }
@@ -171,6 +174,68 @@ public sealed class LocalBackupManager(string databasePath)
                 continue;
             File.Delete(path);
             File.Delete(path + ".sha256");
+            string workspace = WorkspaceCopyDirectory(path);
+            if (Directory.Exists(workspace))
+                Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    private static string WorkspaceCopyDirectory(string snapshot) => snapshot + ".workspace";
+
+    private string LiveWorkspaceDirectory => Path.Combine(Path.GetDirectoryName(_databasePath)!, "workspace-v1");
+
+    private void SnapshotWorkspaceFiles(string snapshot)
+    {
+        if (!Directory.Exists(LiveWorkspaceDirectory))
+            return;
+
+        string destination = WorkspaceCopyDirectory(snapshot);
+        Directory.CreateDirectory(destination);
+        foreach (string source in Directory.EnumerateFiles(LiveWorkspaceDirectory, "*.json"))
+        {
+            string name = Path.GetFileName(source);
+            string copy = Path.Combine(destination, name);
+            File.Copy(source, copy, overwrite: false);
+            File.WriteAllText(copy + ".sha256", Sha256(copy) + "\n");
+        }
+    }
+
+    private static void VerifyWorkspaceFiles(string snapshot)
+    {
+        string directory = WorkspaceCopyDirectory(snapshot);
+        if (!Directory.Exists(directory))
+            return;
+
+        foreach (string file in Directory.EnumerateFiles(directory, "*.json"))
+        {
+            string checksumPath = file + ".sha256";
+            if (!File.Exists(checksumPath) ||
+                !string.Equals(File.ReadAllText(checksumPath).Trim(), Sha256(file), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Workspace backup checksum mismatch: " + Path.GetFileName(file));
+        }
+    }
+
+    private void RestoreWorkspaceFiles(string snapshot)
+    {
+        string directory = WorkspaceCopyDirectory(snapshot);
+        if (!Directory.Exists(directory))
+            return;
+        VerifyWorkspaceFiles(snapshot);
+
+        Directory.CreateDirectory(LiveWorkspaceDirectory);
+        foreach (string source in Directory.EnumerateFiles(directory, "*.json"))
+        {
+            string destination = Path.Combine(LiveWorkspaceDirectory, Path.GetFileName(source));
+            string temp = destination + ".restore-" + Guid.NewGuid().ToString("N");
+            try
+            {
+                File.Copy(source, temp);
+                File.Move(temp, destination, overwrite: true);
+            }
+            finally
+            {
+                if (File.Exists(temp)) File.Delete(temp);
+            }
         }
     }
 
