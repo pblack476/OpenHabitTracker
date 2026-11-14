@@ -15,6 +15,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate source patch against unchanged main
+        run: |
+          git fetch --depth=1 origin main
+          git worktree add --detach "$RUNNER_TEMP/openht-patch-base" origin/main
+          git -C "$RUNNER_TEMP/openht-patch-base" apply --check "$GITHUB_WORKSPACE/patches/OpenHabitTracker-personal-from-main.patch"
+          git worktree remove --force "$RUNNER_TEMP/openht-patch-base"
+
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
