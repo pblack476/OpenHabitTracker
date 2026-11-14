@@ -6,12 +6,13 @@ using OpenHabitTracker.Query;
 
 namespace OpenHabitTracker.Services;
 
-public class NoteService(ClientState clientState, ISearchFilterService searchFilterService, MarkdownToHtml markdownToHtml, IAppReview appReview) : INoteService
+public class NoteService(ClientState clientState, ISearchFilterService searchFilterService, MarkdownToHtml markdownToHtml, IAppReview appReview, UndoJournal? undoJournal = null) : INoteService
 {
     private readonly ClientState _clientState = clientState;
     private readonly ISearchFilterService _searchFilterService = searchFilterService;
     private readonly MarkdownToHtml _markdownToHtml = markdownToHtml;
     private readonly IAppReview _appReview = appReview;
+    private readonly UndoJournal? _undo = undoJournal;
 
     public IReadOnlyCollection<NoteModel>? Notes => _clientState.Notes?.Values;
 
@@ -96,29 +97,40 @@ public class NoteService(ClientState clientState, ISearchFilterService searchFil
             return;
 
         string safeTitle = title.Trim();
+        string oldTitle = note.Title;
+        Priority oldPriority = note.Priority;
         entity.Title = safeTitle;
         entity.Priority = priority;
         await _clientState.DataAccess.UpdateNote(entity);
         note.Title = safeTitle;
         note.Priority = priority;
         note.UpdatedAt = entity.UpdatedAt;
+        _undo?.Record("Edit note", () => QuickUpdate(note, oldTitle, oldPriority));
     }
 
     public async Task DeleteNote(NoteModel note)
     {
-        if (_clientState.Notes is null)
+        if (_clientState.Notes is null || note.IsDeleted)
             return;
 
+        if (await _clientState.DataAccess.GetNote(note.Id) is not NoteEntity entity)
+            return;
+        entity.IsDeleted = true;
+        await _clientState.DataAccess.UpdateNote(entity);
         note.IsDeleted = true;
-
-        // add to TrashedNotes if it is not null (if TrashedNotes is null, it will add this on Initialize)
+        note.UpdatedAt = entity.UpdatedAt;
         _clientState.TrashedNotes?.Add(note);
+        _undo?.Record("Delete note", () => RestoreDeletedNote(note));
+    }
 
-        if (await _clientState.DataAccess.GetNote(note.Id) is NoteEntity noteEntity)
-        {
-            noteEntity.IsDeleted = true;
-            await _clientState.DataAccess.UpdateNote(noteEntity);
-            note.UpdatedAt = noteEntity.UpdatedAt;
-        }
+    private async Task RestoreDeletedNote(NoteModel note)
+    {
+        if (await _clientState.DataAccess.GetNote(note.Id) is not NoteEntity entity)
+            return;
+        entity.IsDeleted = false;
+        await _clientState.DataAccess.UpdateNote(entity);
+        note.IsDeleted = false;
+        note.UpdatedAt = entity.UpdatedAt;
+        _clientState.TrashedNotes?.Remove(note);
     }
 }

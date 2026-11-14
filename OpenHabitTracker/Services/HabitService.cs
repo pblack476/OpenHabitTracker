@@ -6,12 +6,13 @@ using OpenHabitTracker.Query;
 
 namespace OpenHabitTracker.Services;
 
-public class HabitService(ClientState clientState, ISearchFilterService searchFilterService, IAppReview appReview, INotificationScheduler notificationScheduler) : IHabitService
+public class HabitService(ClientState clientState, ISearchFilterService searchFilterService, IAppReview appReview, INotificationScheduler notificationScheduler, UndoJournal? undoJournal = null) : IHabitService
 {
     private readonly ClientState _clientState = clientState;
     private readonly ISearchFilterService _searchFilterService = searchFilterService;
     private readonly IAppReview _appReview = appReview;
     private readonly INotificationScheduler _notificationScheduler = notificationScheduler;
+    private readonly UndoJournal? _undo = undoJournal;
 
     public IReadOnlyCollection<HabitModel>? Habits => _clientState.Habits?.Values;
 
@@ -157,6 +158,8 @@ public class HabitService(ClientState clientState, ISearchFilterService searchFi
             return;
 
         string safeTitle = title.Trim();
+        string oldTitle = habit.Title;
+        Priority oldPriority = habit.Priority;
         entity.Title = safeTitle;
         entity.Priority = priority;
         await _clientState.DataAccess.UpdateHabit(entity);
@@ -164,6 +167,7 @@ public class HabitService(ClientState clientState, ISearchFilterService searchFi
         habit.Priority = priority;
         habit.UpdatedAt = entity.UpdatedAt;
         await _notificationScheduler.Rebuild();
+        _undo?.Record("Edit recurring task", () => QuickUpdate(habit, oldTitle, oldPriority));
     }
 
     public async Task Start(HabitModel habit)
@@ -232,6 +236,10 @@ public class HabitService(ClientState clientState, ISearchFilterService searchFi
 
         if (habit.TimesDone.LastOrDefault(x => x.CompletedAt is null) is TimeModel time)
         {
+            DateTime? oldCompleted = time.CompletedAt;
+            double oldQuantity = time.Quantity;
+            DateTime? oldLastDone = habit.LastTimeDoneAt;
+            Dictionary<long, DateTime?> oldItems = habit.Items?.ToDictionary(item => item.Id, item => item.DoneAt) ?? new();
             time.CompletedAt = now;
             time.Quantity = quantity ?? habit.TargetQuantity;
 
@@ -256,11 +264,38 @@ public class HabitService(ClientState clientState, ISearchFilterService searchFi
             {
                 await UncheckAllItems(habit);
             }
+
+            _undo?.Record("Complete recurring task", () => RestoreRunningCompletion(habit, time, oldCompleted, oldQuantity, oldLastDone, oldItems));
         }
         else
         {
             await AddTimeDone(habit, now, quantity); // records the engagement and unchecks the items itself
         }
+    }
+
+    private async Task RestoreRunningCompletion(HabitModel habit, TimeModel time, DateTime? oldCompleted, double oldQuantity, DateTime? oldLastDone, Dictionary<long, DateTime?> oldItems)
+    {
+        if (await _clientState.DataAccess.GetTime(time.Id) is not TimeEntity entity)
+            return;
+        entity.CompletedAt = oldCompleted;
+        entity.Quantity = oldQuantity;
+        await _clientState.DataAccess.UpdateTime(entity);
+        time.CompletedAt = oldCompleted;
+        time.Quantity = oldQuantity;
+        habit.RefreshTimesDoneByDay();
+        await SetLastTimeDone(habit, oldLastDone);
+
+        foreach (KeyValuePair<long, DateTime?> entry in oldItems)
+        {
+            if (habit.Items?.FirstOrDefault(item => item.Id == entry.Key) is ItemModel model)
+                model.DoneAt = entry.Value;
+            if (await _clientState.DataAccess.GetItem(entry.Key) is ItemEntity item)
+            {
+                item.DoneAt = entry.Value;
+                await _clientState.DataAccess.UpdateItem(item);
+            }
+        }
+        await _notificationScheduler.Rebuild();
     }
 
     private async Task UncheckAllItems(HabitModel habit)
@@ -337,6 +372,7 @@ public class HabitService(ClientState clientState, ISearchFilterService searchFi
         await _appReview.RecordEngagement(EngagementKind.Completed);
 
         await _notificationScheduler.Rebuild();
+        _undo?.Record("Complete recurring task", () => RemoveTimeDone(habit, timeModel));
     }
 
     public async Task RemoveTimeDone(HabitModel habit, TimeModel timeModel)
@@ -394,21 +430,29 @@ public class HabitService(ClientState clientState, ISearchFilterService searchFi
 
     public async Task DeleteHabit(HabitModel habit)
     {
-        if (_clientState.Habits is null)
+        if (_clientState.Habits is null || habit.IsDeleted)
             return;
 
+        if (await _clientState.DataAccess.GetHabit(habit.Id) is not HabitEntity entity)
+            return;
+        entity.IsDeleted = true;
+        await _clientState.DataAccess.UpdateHabit(entity);
         habit.IsDeleted = true;
-
-        // add to TrashedHabits if it is not null (if TrashedHabits is null, it will add this on Initialize)
+        habit.UpdatedAt = entity.UpdatedAt;
         _clientState.TrashedHabits?.Add(habit);
+        await _notificationScheduler.Rebuild();
+        _undo?.Record("Delete recurring task", () => RestoreDeletedHabit(habit));
+    }
 
-        if (await _clientState.DataAccess.GetHabit(habit.Id) is HabitEntity habitEntity)
-        {
-            habitEntity.IsDeleted = true;
-            await _clientState.DataAccess.UpdateHabit(habitEntity);
-            habit.UpdatedAt = habitEntity.UpdatedAt;
-        }
-
+    private async Task RestoreDeletedHabit(HabitModel habit)
+    {
+        if (await _clientState.DataAccess.GetHabit(habit.Id) is not HabitEntity entity)
+            return;
+        entity.IsDeleted = false;
+        await _clientState.DataAccess.UpdateHabit(entity);
+        habit.IsDeleted = false;
+        habit.UpdatedAt = entity.UpdatedAt;
+        _clientState.TrashedHabits?.Remove(habit);
         await _notificationScheduler.Rebuild();
     }
 }
