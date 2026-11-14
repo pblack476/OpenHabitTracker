@@ -143,7 +143,8 @@ public class Program
         builder.Services.AddBlazor();
         builder.Services.AddScoped<IWorkspaceStorage>(sp => new DesktopWorkspaceStorage(databaseDirectory, sp.GetRequiredService<IJsInterop>()));
         builder.Services.AddScoped<IAppReview, AppReview>(); // different in Maui
-        builder.Services.AddScoped<INotifications, OpenHabitTracker.Blazor.Photino.Notifications>();
+        builder.Services.AddScoped<INotifications>(sp => new OpenHabitTracker.Blazor.Photino.Notifications(
+            sp.GetRequiredService<ILogger<OpenHabitTracker.Blazor.Photino.Notifications>>(), databaseDirectory));
         builder.Services.AddScoped<IOpenFile, OpenFile>();
         builder.Services.AddScoped<ISaveFile, SaveFile>();
         builder.Services.AddScoped<INavBarFragment, NavBarFragment>();

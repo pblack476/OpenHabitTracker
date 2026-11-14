@@ -12,6 +12,9 @@ public class NotificationRequest
 
     // Route to open when the notification is tapped, e.g. "/tasks/42" or "/habits".
     public string Route { get; set; } = string.Empty;
+
+    public string SnoozeLabel { get; set; } = "Snooze 10 min";
+    public string CompleteLabel { get; set; } = "Mark as done";
 }
 
 public interface INotifications
@@ -54,4 +57,9 @@ public interface INotifications
     Task Replace(IReadOnlyList<NotificationRequest> requests);
 
     Task CancelAll();
+
+    // Optional: a platform supporting notification buttons can call back with
+    // the route and action. Other hosts keep the normal tap behavior.
+    void SetActionHandler(Func<string, string, Task> handler) { }
+    Task Snooze(string route, TimeSpan delay) => Task.CompletedTask;
 }

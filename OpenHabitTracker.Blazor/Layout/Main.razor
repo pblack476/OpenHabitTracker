@@ -21,6 +21,7 @@
 @inject INotificationScheduler NotificationScheduler
 @inject NotificationRebuildRelay NotificationRebuildRelay
 @inject INotifications Notifications
+@inject ITaskService TaskService
 @inject IServiceProvider Services
 
 @* Root <div> inside <html><body><app> *@
@@ -320,6 +321,7 @@
 
         // Tapping a notification navigates to what it was about.
         Notifications.SetActivatedAction(OnNotificationActivated);
+        Notifications.SetActionHandler((route, action) => InvokeAsync(() => HandleNotificationAction(route, action)));
 
         // Import, delete-all and a sync pull replace the data wholesale, settings included, and ClientState cannot
         // reach the scheduler or the page itself.
@@ -392,6 +394,31 @@
         _stateChanged.Value = !_stateChanged.Value;
 
         StateHasChanged();
+    }
+
+    async Task HandleNotificationAction(string route, string action)
+    {
+        if (!route.StartsWith("/tasks/", StringComparison.Ordinal) ||
+            !long.TryParse(route["/tasks/".Length..], out long taskId))
+            return;
+
+        if (action == "snooze")
+        {
+            await Notifications.Snooze(route, TimeSpan.FromMinutes(10));
+            return;
+        }
+
+        if (action != "complete")
+            return;
+
+        await TaskService.Initialize();
+        TaskModel? task = TaskService.Tasks?.FirstOrDefault(t => t.Id == taskId);
+        if (task is not null && !task.IsDeleted && task.CompletedAt is null)
+        {
+            await TaskService.MarkAsDone(task);
+            _stateChanged.Value = !_stateChanged.Value;
+            StateHasChanged();
+        }
     }
 
     void OnNotificationActivated(string route)

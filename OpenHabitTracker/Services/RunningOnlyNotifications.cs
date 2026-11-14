@@ -8,6 +8,7 @@ public abstract class RunningOnlyNotifications : INotifications, IAsyncDisposabl
     private readonly TimeSpan _interval = TimeSpan.FromSeconds(30);
 
     private List<NotificationRequest> _requests = new();
+    private readonly List<NotificationRequest> _temporary = [];
     private DateTime _lastTick = DateTime.Now;
 
     private PeriodicTimer? _timer;
@@ -23,6 +24,7 @@ public abstract class RunningOnlyNotifications : INotifications, IAsyncDisposabl
     public bool CanOpenSettings => false;
 
     private Action<string>? _onActivated;
+    private Func<string, string, Task>? _onAction;
 
     public abstract Task<bool> RequestPermission();
 
@@ -55,6 +57,19 @@ public abstract class RunningOnlyNotifications : INotifications, IAsyncDisposabl
     protected void OnActivated(string route)
     {
         _onActivated?.Invoke(route);
+    }
+
+    public virtual void SetActionHandler(Func<string, string, Task> handler) => _onAction = handler;
+
+    protected Task OnAction(string route, string action)
+        => _onAction is null ? Task.CompletedTask : _onAction(route, action);
+
+    public virtual Task Snooze(string route, TimeSpan delay) => Task.CompletedTask;
+
+    protected void QueueTemporary(NotificationRequest request)
+    {
+        _temporary.Add(request);
+        Start();
     }
 
     public Task Replace(IReadOnlyList<NotificationRequest> requests)
@@ -125,13 +140,15 @@ public abstract class RunningOnlyNotifications : INotifications, IAsyncDisposabl
             {
                 DateTime now = DateTime.Now;
 
-                List<NotificationRequest> due = _requests.Where(request => request.NotifyAt > _lastTick && request.NotifyAt <= now).ToList();
+                List<NotificationRequest> due = _requests.Concat(_temporary)
+                    .Where(request => request.NotifyAt > _lastTick && request.NotifyAt <= now).ToList();
 
                 _lastTick = now;
 
                 foreach (NotificationRequest request in due)
                 {
                     _requests.Remove(request);
+                    _temporary.Remove(request);
 
                     await Show(request);
                 }

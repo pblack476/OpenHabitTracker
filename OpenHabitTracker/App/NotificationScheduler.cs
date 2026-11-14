@@ -75,7 +75,10 @@ public class NotificationScheduler(ClientState clientState, INotifications notif
                 Title = task?.Title ?? _loc["Tasks"],
                 Body = scheduled.NotifyAt == task?.PlannedAt ? string.Empty : task?.PlannedAt?.ToString("t") ?? string.Empty,
                 NotifyAt = scheduled.NotifyAt,
-                Route = $"/tasks/{scheduled.TaskId}"
+                Route = $"/tasks/{scheduled.TaskId}",
+                SnoozeLabel = _clientState.Settings.Culture.StartsWith("pt", StringComparison.OrdinalIgnoreCase)
+                    ? "Adiar 10 min" : "Snooze 10 min",
+                CompleteLabel = _loc["Mark as done"]
             };
         }
 
