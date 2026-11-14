@@ -14,6 +14,10 @@
             {
                 <button type="button" role="menuitem" @onclick="() => Run(OnDuplicate)"><i class="bi bi-files" aria-hidden="true"></i>@Loc["Duplicate"]</button>
             }
+            @if (OnPin.HasDelegate)
+            {
+                <button type="button" role="menuitem" @onclick="() => Run(OnPin)"><i class="@($"bi {(IsPinned ? "bi-star-fill" : "bi-star")}")" aria-hidden="true"></i>@Loc[IsPinned ? "Unpin" : "Pin"]</button>
+            }
             @if (OnCopy.HasDelegate)
             {
                 <button type="button" role="menuitem" @onclick="() => Run(OnCopy)"><i class="bi bi-clipboard" aria-hidden="true"></i>@Loc["Copy"]</button>
@@ -37,6 +41,8 @@
 @code {
     [Parameter] public EventCallback OnEdit { get; set; }
     [Parameter] public EventCallback OnDuplicate { get; set; }
+    [Parameter] public EventCallback OnPin { get; set; }
+    [Parameter] public bool IsPinned { get; set; }
     [Parameter] public EventCallback OnCopy { get; set; }
     [Parameter] public EventCallback OnToday { get; set; }
     [Parameter] public EventCallback OnTomorrow { get; set; }
