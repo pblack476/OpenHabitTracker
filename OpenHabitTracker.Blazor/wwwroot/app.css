@@ -454,3 +454,16 @@ html, body {
 .app-actions-popover button { display:flex; align-items:center; gap:.6rem; border:0; background:transparent; color:var(--bs-body-color); text-align:start; padding:.55rem .7rem; border-radius:8px !important; width:100%; }
 .app-actions-popover button:hover, .app-actions-popover button:focus-visible { background:var(--bs-primary-bg-subtle); }
 .app-actions-popover .bi { width: 1.1rem; color:var(--bs-secondary-color); }
+
+// Q08 - Agenda-first dashboard, separate from the legacy all-items Home.
+.app-today { padding: .7rem 1rem 2rem; width: 100%; }
+.app-today h1 { font-size:clamp(1.55rem,2.5vw,2.3rem); letter-spacing:-.04em; margin: .6rem 0 1.25rem; }
+.app-today-panel { padding:1rem; border:1px solid var(--bs-border-color-translucent); border-radius:15px; background:var(--bs-body-bg); box-shadow:0 4px 15px rgba(0,0,0,.035); }
+.app-today-panel h2 { font-size:1rem; font-weight:750; margin-bottom:.9rem; }
+.app-today-list { display:grid; gap:.45rem; }
+.app-today-entry { display:flex; flex-wrap:wrap; align-items:center; gap:.55rem; padding:.55rem .65rem; border-radius:10px; border:1px solid var(--bs-border-color-translucent); background:var(--bs-body-bg); }
+.app-today-entry a { min-width:8rem; flex:1; color:var(--bs-body-color); text-decoration:none; overflow-wrap:anywhere; }
+.app-today-entry a:hover { text-decoration:underline; }
+.app-today-meta { color:var(--bs-secondary-color); font-size:.82rem; }
+.app-today .app-today-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+@media (max-width:870px) { .app-today .app-today-grid { grid-template-columns:1fr; } }
