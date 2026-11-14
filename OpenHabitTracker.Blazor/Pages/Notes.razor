@@ -20,6 +20,7 @@
 @inject IStringLocalizer Loc
 @inject IPriorityService PriorityService
 @inject IGTourService GTourService
+@inject IServiceProvider Services
 
 <PageTitle>OpenHabitTracker - Notes</PageTitle>
 
@@ -82,6 +83,8 @@
             }
         </div>
 
+        <button class="btn btn-sm @(Workspace?.IsManual("notes") == true ? "btn-primary" : "btn-outline-secondary") mb-2" aria-pressed="@(Workspace?.IsManual("notes") == true)" @onclick="ToggleManualOrder"><i class="bi bi-arrows-move" aria-hidden="true"></i> @Loc["Manual order"]</button>
+
         foreach (var group in GetNoteGroups())
         {
             @if (ClientState.Settings.ShowGroupedByCategory)
@@ -95,9 +98,9 @@
 
             @if (group.Category?.IsCollapsed != true)
             {
-            foreach (NoteModel note in group.Notes)
+            foreach (NoteModel note in Workspace?.ApplyOrder("notes", group.Notes, x => x.Id) ?? group.Notes)
             {
-                <div class="@($"my-{ClientState.Settings.VerticalMargin}")">
+                <div class="@($"my-{ClientState.Settings.VerticalMargin}")" draggable="@(Workspace?.IsManual("notes") == true && note.Id != Id)" @ondragstart="() => _draggedItemId = note.Id" @ondragover:preventDefault="true" @ondrop="() => DropItem(note.Id, group.Notes.Select(x => x.Id))">
                     @if (!_showSecondColumn && note.Id == Id && NoteService.NewNote is null)
                     {
                         <NoteComponent Note="note" CloseSelected="CloseSelected" Copied="OnCopied" />
@@ -113,7 +116,7 @@
                                 }
 
                                 <button id="note-item-@note.Id" class="input-group-text bg-transparent flex-grow-1 text-wrap highlightable d-flex align-items-center" title="@note.Title" @onclick="() => OpenSelected(note.Id)" data-notes-step-2><span class="title-clamp">@((MarkupString)SearchFilterService.MarkSearchResults(note.Title))</span></button>
-                                <ContentActions OnEdit="() => BeginQuick(note)" OnCopy="() => CopyExisting(note)" OnDuplicate="() => DuplicateExisting(note)" />
+                                <ContentActions OnEdit="() => BeginQuick(note)" OnCopy="() => CopyExisting(note)" OnDuplicate="() => DuplicateExisting(note)" OnPin="() => TogglePin(note.Id)" IsPinned="@(Workspace?.IsPinned("notes", note.Id) == true)" />
                             </div>
 
                             @if (_quickNoteId == note.Id)
@@ -174,6 +177,28 @@
 }
 
 @code {
+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
+    private long? _draggedItemId;
+
+    private async Task TogglePin(long id)
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.TogglePinned("notes", id);
+    }
+
+    private async Task ToggleManualOrder()
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.ToggleManual("notes");
+    }
+
+    private async Task DropItem(long targetId, IEnumerable<long> currentIds)
+    {
+        if (_draggedItemId is long sourceId && Workspace is PersonalWorkspaceState workspace && workspace.IsManual("notes"))
+            await workspace.Move("notes", sourceId, targetId, currentIds);
+        _draggedItemId = null;
+    }
+
     TourStep[] tourSteps;
 
     public Notes()

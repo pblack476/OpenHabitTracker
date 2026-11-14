@@ -502,3 +502,7 @@ html, body {
 .app-calendar-weekdays span { text-align:center; }
 .app-calendar-agenda { display:grid; gap:.45rem; margin:.65rem 0; }
 @media(max-width:650px){ .app-calendar-grid { gap:.14rem; } .app-calendar-day { min-height:3.9rem; padding:.3rem; } .app-calendar-date { font-size:.8rem; } .app-calendar-count { font-size:.65rem; } }
+
+// Q12/Q13: visible reorder state without overriding current urgency sorting.
+.app-shell [draggable="true"] { cursor: grab; }
+.app-shell [draggable="true"]:active { cursor: grabbing; }

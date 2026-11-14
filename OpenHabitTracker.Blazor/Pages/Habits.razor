@@ -21,6 +21,7 @@
 @inject IStringLocalizer Loc
 @inject IPriorityService PriorityService
 @inject IGTourService GTourService
+@inject IServiceProvider Services
 
 <PageTitle>OpenHabitTracker - Habits</PageTitle>
 
@@ -145,6 +146,8 @@
         DateTime weekStart = CalendarParams.GetFirstDayOfWeek(ClientState.Settings.FirstDayOfWeek, DateTime.Today);
         DateTime weekEnd = weekStart.AddDays(7);
 
+        <button class="btn btn-sm @(Workspace?.IsManual("habits") == true ? "btn-primary" : "btn-outline-secondary") mb-2" aria-pressed="@(Workspace?.IsManual("habits") == true)" @onclick="ToggleManualOrder"><i class="bi bi-arrows-move" aria-hidden="true"></i> @Loc["Manual order"]</button>
+
         foreach (var group in GetHabitGroups())
         {
             @if (ClientState.Settings.ShowGroupedByCategory)
@@ -170,11 +173,11 @@
 
             @if (group.Category?.IsCollapsed != true)
             {
-            foreach (HabitModel habit in group.Habits)
+            foreach (HabitModel habit in Workspace?.ApplyOrder("habits", group.Habits, x => x.Id) ?? group.Habits)
             {
                 bool showHabitComponent = !_showSecondColumn && habit.Id == Id && HabitService.NewHabit is null;
 
-                <div class="@($"my-{ClientState.Settings.VerticalMargin} {(showHabitComponent ? "" : "d-flex")}")">
+                <div class="@($"my-{ClientState.Settings.VerticalMargin} {(showHabitComponent ? "" : "d-flex")}")" draggable="@(Workspace?.IsManual("habits") == true && !showHabitComponent)" @ondragstart="() => _draggedItemId = habit.Id" @ondragover:preventDefault="true" @ondrop="() => DropItem(habit.Id, group.Habits.Select(x => x.Id))">
                     @if (showHabitComponent)
                     {
                         <HabitComponent Habit="habit" CloseSelected="CloseSelected" Copied="OnCopied" />
@@ -190,7 +193,7 @@
                                 }
 
                                 <button id="habit-item-@habit.Id" class="input-group-text bg-transparent flex-grow-1 text-wrap highlightable d-flex align-items-center" title="@habit.Title" @onclick="() => OpenSelected(habit.Id)" data-habits-step-2><span class="title-clamp">@((MarkupString)SearchFilterService.MarkSearchResults(habit.Title))</span></button>
-                                <ContentActions OnEdit="() => BeginQuick(habit)" OnCopy="() => CopyExisting(habit)" OnDuplicate="() => DuplicateExisting(habit)" />
+                                <ContentActions OnEdit="() => BeginQuick(habit)" OnCopy="() => CopyExisting(habit)" OnDuplicate="() => DuplicateExisting(habit)" OnPin="() => TogglePin(habit.Id)" IsPinned="@(Workspace?.IsPinned("habits", habit.Id) == true)" />
 
                                 @{
                                     string color = habit.GetRatio(ClientState.Settings.SelectedRatio) switch
@@ -285,6 +288,28 @@
 <QuantityModalComponent IsVisible="_showQuantityModal" ShowCancel="true" InitialQuantity="_pendingQuantityHabit?.TargetQuantity ?? 1" OnOK="OnModalConfirm" OnCancel="CancelQuantityModal" />
 
 @code {
+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
+    private long? _draggedItemId;
+
+    private async Task TogglePin(long id)
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.TogglePinned("habits", id);
+    }
+
+    private async Task ToggleManualOrder()
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.ToggleManual("habits");
+    }
+
+    private async Task DropItem(long targetId, IEnumerable<long> currentIds)
+    {
+        if (_draggedItemId is long sourceId && Workspace is PersonalWorkspaceState workspace && workspace.IsManual("habits"))
+            await workspace.Move("habits", sourceId, targetId, currentIds);
+        _draggedItemId = null;
+    }
+
     TourStep[] tourSteps;
 
     public Habits()

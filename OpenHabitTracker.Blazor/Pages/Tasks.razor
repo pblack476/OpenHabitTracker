@@ -159,6 +159,8 @@
             </div>
         }
 
+        <button class="btn btn-sm @(Workspace?.IsManual("tasks") == true ? "btn-primary" : "btn-outline-secondary") mb-2" aria-pressed="@(Workspace?.IsManual("tasks") == true)" @onclick="ToggleManualOrder"><i class="bi bi-arrows-move" aria-hidden="true"></i> @Loc["Manual order"]</button>
+
         foreach (var group in GetTaskGroups())
         {
             @if (ClientState.Settings.ShowGroupedByCategory)
@@ -172,9 +174,9 @@
 
             @if (group.Category?.IsCollapsed != true)
             {
-            foreach (TaskModel task in group.Tasks)
+            foreach (TaskModel task in Workspace?.ApplyOrder("tasks", group.Tasks, x => x.Id) ?? group.Tasks)
             {
-                <div class="@($"my-{ClientState.Settings.VerticalMargin}")">
+                <div class="@($"my-{ClientState.Settings.VerticalMargin}")" draggable="@(Workspace?.IsManual("tasks") == true && task.Id != Id)" @ondragstart="() => _draggedItemId = task.Id" @ondragover:preventDefault="true" @ondrop="() => DropItem(task.Id, group.Tasks.Select(x => x.Id))">
                     @if (!_showSecondColumn && task.Id == Id && TaskService.NewTask is null)
                     {
                         <TaskComponent Task="task" CloseSelected="CloseSelected" Copied="OnCopied" />
@@ -198,7 +200,7 @@
                                 {
                                     <small class="input-group-text bg-transparent" data-tasks-step-3>@(task.IsPlannedDateOnly ? task.PlannedAt.Value.ToShortDateString() : task.PlannedAt.Value.Date == DateTime.Now.Date ? task.PlannedAt.Value.ToShortTimeString() : task.PlannedAt.Value.ToShortDateString())</small>
                                 }
-                                <ContentActions OnEdit="() => BeginQuick(task)" OnCopy="() => CopyExisting(task)" OnDuplicate="() => DuplicateExisting(task)" OnToday="() => RescheduleExisting(task, DateTime.Today)" OnTomorrow="() => RescheduleExisting(task, DateTime.Today.AddDays(1))" OnNextWeek="() => RescheduleExisting(task, NextMonday())" CanReschedule="task.CompletedAt is null" />
+                                <ContentActions OnEdit="() => BeginQuick(task)" OnCopy="() => CopyExisting(task)" OnDuplicate="() => DuplicateExisting(task)" OnPin="() => TogglePin(task.Id)" IsPinned="@(Workspace?.IsPinned("tasks", task.Id) == true)" OnToday="() => RescheduleExisting(task, DateTime.Today)" OnTomorrow="() => RescheduleExisting(task, DateTime.Today.AddDays(1))" OnNextWeek="() => RescheduleExisting(task, NextMonday())" CanReschedule="task.CompletedAt is null" />
                                 <button class="@($"btn {(task.CompletedAt is null ? "btn-outline-primary" : "btn-primary")}")" aria-label="@Loc["Mark as done"]" @onclick="() => OnMarkAsDone(task)" data-tasks-step-4><i class="bi bi-check-square"></i></button>
                             </div>
 
@@ -269,6 +271,28 @@
 }
 
 @code {
+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
+    private long? _draggedItemId;
+
+    private async Task TogglePin(long id)
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.TogglePinned("tasks", id);
+    }
+
+    private async Task ToggleManualOrder()
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.ToggleManual("tasks");
+    }
+
+    private async Task DropItem(long targetId, IEnumerable<long> currentIds)
+    {
+        if (_draggedItemId is long sourceId && Workspace is PersonalWorkspaceState workspace && workspace.IsManual("tasks"))
+            await workspace.Move("tasks", sourceId, targetId, currentIds);
+        _draggedItemId = null;
+    }
+
     bool _selectionMode;
     bool _confirmBatchDelete;
     HashSet<long> _selectedTaskIds = [];
