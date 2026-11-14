@@ -75,6 +75,37 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
         await _notificationScheduler.Rebuild();
     }
 
+    public async Task<int> AddTasksFromLines(string text)
+    {
+        IReadOnlyList<string> titles = BulkTextParser.Parse(text);
+        if (titles.Count == 0)
+            return 0;
+
+        if (_clientState.Tasks is null)
+            await Initialize();
+
+        DateTime now = DateTime.Now;
+        List<TaskModel> models = titles.Select(title => new TaskModel
+        {
+            Title = title,
+            Color = "bg-info-subtle",
+            CreatedAt = now,
+            UpdatedAt = now
+        }).ToList();
+        List<TaskEntity> entities = models.Select(model => model.ToEntity()).ToList();
+
+        await _clientState.DataAccess.AddTasks(entities);
+
+        for (int i = 0; i < models.Count; i++)
+        {
+            models[i].Id = entities[i].Id;
+            _clientState.Tasks!.Add(models[i].Id, models[i]);
+        }
+
+        await _appReview.RecordEngagement(EngagementKind.ContentCreated);
+        return models.Count;
+    }
+
     public async Task UpdateTask()
     {
         // Escape saves the focused field and closes the task without waiting, and the close clears SelectedTask.

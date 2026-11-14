@@ -55,6 +55,32 @@ public class ItemService(ClientState clientState) : IItemService
         NewItem = new();
     }
 
+    public async Task<int> AddItemsFromLines(ItemsModel? items, string text)
+    {
+        IReadOnlyList<string> titles = BulkTextParser.Parse(text);
+        if (items is null || titles.Count == 0)
+            return 0;
+
+        if (items.Id == 0)
+            throw new InvalidOperationException("Save the task before adding checklist items.");
+
+        await Initialize(items);
+
+        List<ItemModel> models = titles.Select(title => new ItemModel { ParentId = items.Id, Title = title }).ToList();
+        List<ItemEntity> entities = models.Select(model => model.ToEntity()).ToList();
+        await _clientState.DataAccess.AddItems(entities);
+
+        items.Items ??= [];
+        _clientState.Items ??= new();
+        for (int i = 0; i < models.Count; i++)
+        {
+            models[i].Id = entities[i].Id;
+            items.Items.Add(models[i]);
+            _clientState.Items[models[i].Id] = models[i];
+        }
+        return models.Count;
+    }
+
     public async Task UpdateItem(string title)
     {
         if (SelectedItem is null)

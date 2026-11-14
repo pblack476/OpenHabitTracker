@@ -11,6 +11,7 @@ public interface ITaskService
     Task Initialize();
     void SetSelectedTask(long? id);
     Task AddTask();
+    Task<int> AddTasksFromLines(string text);
     Task UpdateTask();
     Task Start(TaskModel task);
     Task SetStartTime(TaskModel task, DateTime startedAt);
