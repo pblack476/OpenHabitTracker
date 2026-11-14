@@ -59,6 +59,62 @@ public class Program
         };
 
         string databasePath = Path.Combine(databaseDirectory, "OpenHT.db");
+        LocalBackupManager backups = new(databasePath);
+
+        if (args.Contains("--list-backups"))
+        {
+            foreach (LocalBackupManager.Snapshot entry in backups.ListBackups())
+                Console.WriteLine($"{entry.FileName} | {entry.CreatedAt:O} | {entry.Length} bytes | {(backups.VerifyBackup(entry.FileName) ? "VERIFIED" : "INVALID")}");
+            return 0;
+        }
+
+        if (args.Contains("--backup-now"))
+        {
+            string? path = backups.BackupNow(DateTime.Now);
+            Console.WriteLine(path ?? "No local SQLite database exists yet.");
+            return 0;
+        }
+
+        int restoreArg = Array.IndexOf(args, "--restore-backup");
+        if (restoreArg >= 0)
+        {
+            if (!args.Contains("--confirm-restore") || restoreArg + 1 >= args.Length)
+            {
+                Console.Error.WriteLine("Restore requires --restore-backup <file name> --confirm-restore, with the app closed.");
+                return 2;
+            }
+
+            try
+            {
+                string saved = backups.Restore(args[restoreArg + 1], DateTime.Now);
+                Console.WriteLine($"Database restored. Pre-restore backup: {saved}");
+                return 0;
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine($"Restore failed: {exception.Message}");
+                return 3;
+            }
+        }
+
+        // Back up a consistent snapshot BEFORE any automatic EF migrations.
+        // Fail closed rather than upgrade a database that could not be backed up.
+        try
+        {
+            backups.BackupIfDue(DateTime.Now);
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine($"Automatic backup failed; startup stopped to protect data: {exception}");
+            return 4;
+        }
+
+        // While the app is open, refresh the daily snapshot if the date changes.
+        using System.Threading.Timer backupTimer = new(_ =>
+        {
+            try { backups.BackupIfDue(DateTime.Now); }
+            catch (Exception error) { FileLog.Write(databaseDirectory, LogLevel.Error, nameof(LocalBackupManager), error.ToString()); }
+        }, null, TimeSpan.FromHours(6), TimeSpan.FromHours(6));
 
         PhotinoBlazorAppBuilder builder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
