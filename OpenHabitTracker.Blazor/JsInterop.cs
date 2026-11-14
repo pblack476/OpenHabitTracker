@@ -192,6 +192,18 @@ public sealed class JsInterop(IJSRuntime jsRuntime) : IJsInterop, IAsyncDisposab
         await module.InvokeVoidAsync("unregisterKeyboardShortcuts");
     }
 
+    public async ValueTask<string?> GetWorkspaceState(string scope)
+    {
+        IJSObjectReference module = await _moduleTask.Value;
+        return await module.InvokeAsync<string?>("getWorkspaceState", scope);
+    }
+
+    public async ValueTask SetWorkspaceState(string scope, string json)
+    {
+        IJSObjectReference module = await _moduleTask.Value;
+        await module.InvokeVoidAsync("setWorkspaceState", scope, json);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_moduleTask.IsValueCreated)

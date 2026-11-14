@@ -35,4 +35,6 @@ public interface IJsInterop
     ValueTask SetDensity(string density);
     ValueTask RegisterKeyboardShortcuts(object dotnetRef);
     ValueTask UnregisterKeyboardShortcuts();
+    ValueTask<string?> GetWorkspaceState(string scope);
+    ValueTask SetWorkspaceState(string scope, string json);
 }

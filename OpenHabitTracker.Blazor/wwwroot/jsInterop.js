@@ -325,3 +325,13 @@ export function unregisterKeyboardShortcuts() {
     document.removeEventListener('keydown', appShortcuts, true);
     appShortcuts = null;
 }
+
+export function getWorkspaceState(scope) {
+    try { return window.localStorage.getItem('openht-personal-workspace:' + scope); }
+    catch { return null; }
+}
+export function setWorkspaceState(scope, json) {
+    // Fail visibly rather than claiming a preference was saved when storage
+    // is blocked/quota-exhausted.
+    window.localStorage.setItem('openht-personal-workspace:' + scope, json);
+}

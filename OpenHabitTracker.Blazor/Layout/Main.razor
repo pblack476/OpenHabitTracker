@@ -447,6 +447,8 @@
         {
             Logger.LogInformation("MainLayout.OnAfterRenderAsync start");
 
+            if (Services.GetService(typeof(PersonalWorkspaceState)) is PersonalWorkspaceState workspace)
+                await workspace.Load();
             _windowDimensions = await JsInterop.GetWindowDimensions();
             await JsInterop.SetDensity(await JsInterop.GetDensity());
             _shortcutReference = DotNetObjectReference.Create(this);

@@ -10,6 +10,7 @@ public static class Startup
     {
         services.AddScoped<IJsInterop, JsInterop>();
         services.AddScoped<IRuntimeClientData, RuntimeClientData>();
+        services.AddScoped<PersonalWorkspaceState>();
 
         services.UseGTour();
         GTourService.Theme = new GTour.Themes.Bootstrap();
