@@ -41,7 +41,7 @@ public sealed class ContentClipboard
     public HabitModel? PasteHabit(long userId, DataLocation location)
         => CanPasteHabit(userId, location) ? CloneHabit(_habit!.Model) : null;
 
-    private static TaskModel CloneTask(TaskModel source) => new()
+    public static TaskModel CloneTask(TaskModel source) => new()
     {
         Title = source.Title,
         Priority = source.Priority,
@@ -53,7 +53,7 @@ public sealed class ContentClipboard
         // StartedAt / CompletedAt deliberately not copied.
     };
 
-    private static NoteModel CloneNote(NoteModel source) => new()
+    public static NoteModel CloneNote(NoteModel source) => new()
     {
         Title = source.Title,
         Content = source.Content,
@@ -62,7 +62,7 @@ public sealed class ContentClipboard
         CategoryId = source.CategoryId
     };
 
-    private static HabitModel CloneHabit(HabitModel source) => new()
+    public static HabitModel CloneHabit(HabitModel source) => new()
     {
         Title = source.Title,
         Priority = source.Priority,

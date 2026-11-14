@@ -184,6 +184,25 @@ public class TaskService(ClientState clientState, ISearchFilterService searchFil
         }
     }
 
+    /// <summary>
+    /// Move a planned task to another day while preserving its existing clock
+    /// time or date-only sentinel. The original task ID and checklist remain.
+    /// </summary>
+    public async Task Reschedule(TaskModel task, DateTime newDay)
+    {
+        if (_clientState.Tasks is null || task.IsDeleted || task.CompletedAt is not null)
+            return;
+
+        if (await _clientState.DataAccess.GetTask(task.Id) is not TaskEntity entity)
+            return;
+
+        task.PlannedDate = newDay.Date;
+        entity.PlannedAt = task.PlannedAt;
+        await _clientState.DataAccess.UpdateTask(entity);
+        task.UpdatedAt = entity.UpdatedAt;
+        await _notificationScheduler.Rebuild();
+    }
+
     public async Task DeleteTask(TaskModel task)
     {
         if (_clientState.Tasks is null)

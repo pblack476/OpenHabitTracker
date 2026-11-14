@@ -43,6 +43,23 @@ public class ContentClipboardTests
     }
 
     [Test]
+    public void DirectClone_DoesNotChangeOrReuseTheInAppClipboard()
+    {
+        ContentClipboard clipboard = new();
+        clipboard.CopyTask(new TaskModel { Title = "Clipboard" }, 1, DataLocation.Local);
+
+        TaskModel source = new() { Title = "Independent", Items = [new ItemModel { Title = "item", DoneAt = DateTime.Now }] };
+        TaskModel clone = ContentClipboard.CloneTask(source);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(clone.Title, Is.EqualTo("Independent"));
+            Assert.That(clone.Items![0].DoneAt, Is.Null);
+            Assert.That(clipboard.PasteTask(1, DataLocation.Local)!.Title, Is.EqualTo("Clipboard"));
+        });
+    }
+
+    [Test]
     public void NoteCopy_KeepsContentAndSeparatesAccounts()
     {
         ContentClipboard clipboard = new();

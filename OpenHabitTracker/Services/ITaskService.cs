@@ -15,5 +15,6 @@ public interface ITaskService
     Task Start(TaskModel task);
     Task SetStartTime(TaskModel task, DateTime startedAt);
     Task MarkAsDone(TaskModel task);
+    Task Reschedule(TaskModel task, DateTime newDay);
     Task DeleteTask(TaskModel task);
 }
