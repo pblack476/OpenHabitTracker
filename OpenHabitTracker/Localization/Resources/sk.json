@@ -345,5 +345,17 @@
   "Recurring tasks": "Recurring tasks",
   "Notes ready": "Notes",
   "Reminders": "Reminders",
-  "Enable reminders in Settings": "Enable reminders in Settings"
+  "Enable reminders in Settings": "Enable reminders in Settings",
+  "Interface density": "Interface density",
+  "Comfortable": "Comfortable",
+  "Compact": "Compact",
+  "Duplicate": "Duplicate",
+  "Actions": "Actions",
+  "Schedule today": "Schedule today",
+  "Schedule tomorrow": "Schedule tomorrow",
+  "Schedule next week": "Schedule next week",
+  "New note": "New note",
+  "New task": "New task",
+  "New recurring task": "New recurring task",
+  "Keyboard shortcuts": "Keyboard shortcuts"
 }

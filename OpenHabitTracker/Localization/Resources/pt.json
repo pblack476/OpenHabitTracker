@@ -20,15 +20,12 @@
   "Priorities": "Prioridades",
   "Trash": "Lixo",
   "Help": "Ajuda",
-
   "Habits": "Tarefas recorrentes",
   "Notes": "Notas",
   "Tasks": "Tarefas",
-
   "Add new note": "Adicionar nota",
   "Add new habit": "Adicionar tarefa recorrente",
   "Add new task": "Adicionar tarefa",
-
   "Search...": "...",
   "Search": "Pesquisar",
   "Filter": "Filtrar",
@@ -183,7 +180,6 @@
   "Habit interval ratio": "Rácio de intervalo",
   "Show only habits with interval ratio over": "Mostrar apenas hábitos com rácio >",
   "Show only habits with interval ratio under": "Mostrar apenas hábitos com rácio <",
-
   "Day": "Dia",
   "Week": "Semana",
   "Month": "Mês",
@@ -203,7 +199,6 @@
   "Elapsed time": "Tempo decorrido",
   "Time spent": "Tempo gasto",
   "Selected interval ratio": "Rácio de intervalo selecionado",
-
   "Previous week": "Semana anterior",
   "Previous month": "Mês anterior",
   "Next month": "Próximo mês",
@@ -226,7 +221,6 @@
   "Clear search": "Limpar pesquisa",
   "Clear planned date": "Limpar data planeada",
   "Clear done date": "Limpar data de conclusão",
-
   "Planned within days from today": "Planeado dentro de dias a partir de hoje",
   "Done within days from today": "Concluído dentro de dias a partir de hoje",
   "Not done within days from today": "Não concluído dentro de dias a partir de hoje",
@@ -238,17 +232,14 @@
   "Latest done day offset from today": "Concluído: dia mais distante a partir de hoje",
   "Clear planned range": "Limpar intervalo planeado",
   "Clear done range": "Limpar intervalo de conclusão",
-
   "Version": "Versão",
   "OpenHabitTracker on GitHub": "OpenHabitTracker no GitHub",
   "Available on Windows, Linux, Android, iOS, macOS, and as a web app": "Disponível em Windows, Linux, Android, iOS, macOS e web",
-
   "Contact": "Contacto",
   "Report a bug or request a feature": "Comunicar um erro ou pedir uma funcionalidade",
   "Ask a question": "Fazer uma pergunta",
   "Post in r/OpenHabitTracker": "Publicar em r/OpenHabitTracker",
   "Message me on Reddit": "Enviar-me uma mensagem no Reddit",
-
   "Privacy": "Privacidade",
   "saves your data (notes, tasks and habits) on your device, offering you complete privacy.": "guarda os seus dados (notas, tarefas e hábitos) no seu dispositivo, garantindo privacidade total.",
   "It allows you to delete the data stored on your device at any time.": "Permite eliminar os dados armazenados no dispositivo a qualquer momento.",
@@ -256,10 +247,8 @@
   "It is available on 6 platforms and on some platforms it can backup your data to your Google Drive.": "Disponível em 6 plataformas e nalgumas pode fazer cópia de segurança para o Google Drive.",
   "If you allow it to backup your data to your Google Drive, it will receive your email and display your name only on your device.": "Se autorizar a cópia para o Google Drive, receberá o seu e-mail e mostrará o seu nome apenas no seu dispositivo.",
   "You can read the privacy policy at": "Pode ler a política de privacidade em",
-
   "Main navigation": "Navegação principal",
   "Main content": "Conteúdo principal",
-
   "Note title": "Título da nota",
   "Task title": "Título da tarefa",
   "Habit title": "Título da tarefa recorrente",
@@ -280,11 +269,9 @@
   "Edit task": "Editar tarefa",
   "Calendar": "Calendário",
   "times done": "vezes feito",
-
   "Group by category": "Agrupar por categoria",
   "Show last done time": "Mostrar último horário de conclusão",
   "Uncategorized": "Sem categoria",
-
   "This week": "Esta semana",
   "out of": "de",
   "Overdue": "Atrasada",
@@ -300,7 +287,6 @@
   "Mark complete when": "Marcar como completo quando",
   "all habits are done": "todas as tarefas recorrentes estão concluídas",
   "any habit is done": "alguma tarefa recorrente está concluída",
-
   "Current streak": "Sequência atual",
   "Best streak": "Melhor sequência",
   "Target": "Meta",
@@ -316,7 +302,6 @@
   "Weeks": "Semanas",
   "Months": "Meses",
   "Years": "Anos",
-
   "Display": "Exibição",
   "Repetitions": "Repetições",
   "Time": "Tempo",
@@ -360,5 +345,17 @@
   "Recurring tasks": "Tarefas recorrentes",
   "Notes ready": "Notas",
   "Reminders": "Lembretes",
-  "Enable reminders in Settings": "Ative os lembretes nas configurações"
+  "Enable reminders in Settings": "Ative os lembretes nas configurações",
+  "Interface density": "Densidade da interface",
+  "Comfortable": "Confortável",
+  "Compact": "Compacto",
+  "Duplicate": "Duplicar",
+  "Actions": "Ações",
+  "Schedule today": "Agendar para hoje",
+  "Schedule tomorrow": "Agendar para amanhã",
+  "Schedule next week": "Agendar para a próxima semana",
+  "New note": "Nova nota",
+  "New task": "Nova tarefa",
+  "New recurring task": "Nova tarefa recorrente",
+  "Keyboard shortcuts": "Atalhos de teclado"
 }
