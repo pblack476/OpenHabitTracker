@@ -10,11 +10,30 @@
 @inject INotificationScheduler NotificationScheduler
 @inject IStringLocalizer Loc
 @inject IGTourService GTourService
+@inject IServiceProvider Services
 
 <div>
     @if (CategoryService.Categories is not null)
     {
         <div class="my-1 list-group">
+            <section class="list-group-item" aria-label="@Loc["Saved views"]">
+                <label for="personal-view-name" class="form-label fw-bold small">@Loc["Saved views"]</label>
+                <div class="input-group mb-2">
+                    <input id="personal-view-name" class="form-control" maxlength="48" @bind="_newViewName" placeholder="@Loc["View name"]" />
+                    <button class="btn btn-outline-primary" disabled="@string.IsNullOrWhiteSpace(_newViewName)" @onclick="SaveCurrentView"><i class="bi bi-bookmark-plus" aria-hidden="true"></i> @Loc["Save"]</button>
+                </div>
+                @if (Workspace?.Views is { Count: > 0 } views)
+                {
+                    @foreach (PersonalWorkspaceState.SavedView view in views)
+                    {
+                        <div class="input-group mb-1" @key="view.Name">
+                            <button class="btn btn-outline-secondary flex-grow-1 text-start" @onclick="() => ApplySavedView(view.Name)"><i class="bi bi-bookmark" aria-hidden="true"></i> @view.Name</button>
+                            <button class="btn btn-outline-danger" aria-label="@Loc["Delete"]" title="@Loc["Delete"]" @onclick="() => DeleteSavedView(view.Name)"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                        </div>
+                    }
+                }
+                @if (_viewError is not null) { <div class="small text-danger" role="alert">@_viewError</div> }
+            </section>
 
             <button class="btn btn-plain border-0 p-0 text-start mx-1 my-2" @onclick="() => ToggleFoldSection(QuerySection.Search)" aria-expanded="@(!_settings.FoldSection[QuerySection.Search])">
                 <small><i class="bi bi-search" aria-hidden="true"></i> @Loc["Search"]<i class="@($"bi {GetFoldIcon(QuerySection.Search)} mx-1")" aria-hidden="true"></i></small>
@@ -352,6 +371,38 @@
 }
 
 @code {
+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
+    private string _newViewName = string.Empty;
+    private string? _viewError;
+
+    private async Task SaveCurrentView()
+    {
+        if (Workspace is null)
+            return;
+        try
+        {
+            await Workspace.SaveView(_newViewName, _settings, SearchFilterService);
+            _newViewName = string.Empty;
+            _viewError = null;
+        }
+        catch (Exception error) when (error is ArgumentException or InvalidOperationException)
+        {
+            _viewError = error.Message;
+        }
+    }
+
+    private async Task ApplySavedView(string name)
+    {
+        if (Workspace?.ApplyView(name, _settings, SearchFilterService) == true)
+            await UpdateSettings();
+    }
+
+    private async Task DeleteSavedView(string name)
+    {
+        if (Workspace is not null)
+            await Workspace.RemoveView(name);
+    }
+
     TourStep[] tourSteps =
     {
         new() { Text = "Search titles and content in Notes, Tasks, and Habits." },
