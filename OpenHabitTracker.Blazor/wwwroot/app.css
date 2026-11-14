@@ -341,3 +341,86 @@ html, body {
 @media (max-width:420px) { .app-topbar-inner { padding:.3rem .35rem; gap:0; } .app-shell .app-topbar .nav-link { min-width:2.1rem; padding:.35rem .45rem !important; } .app-kpis { gap:.5rem; } .app-kpi { padding:.8rem; } .app-kpi strong { font-size:1.65rem; } }
 @media (prefers-reduced-motion:reduce) { .app-shell .app-topbar .nav-link,.app-shell .app-item-card { transition:none; } }
 
+
+/* Scroll containment: keep the viewport-height flex shell from clipping the
+   final rows of a long Notes/Tasks/Recurring Tasks list. A flex child's
+   automatic min-content height can otherwise escape the visible main area. */
+.app-shell {
+    height: 100dvh !important;
+    min-height: 0;
+}
+.app-shell > .app-topbar {
+    flex-shrink: 0 !important;
+}
+.app-shell > #main-content {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    min-width: 0;
+}
+@media (min-width: 768px) {
+    .app-shell > #main-content {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch;
+        overflow: hidden !important;
+    }
+    /* Every direct content panel is an independently scrollable flex child. */
+    .app-shell > #main-content > .child-column {
+        min-height: 0;
+        min-width: 0;
+        height: 100%;
+        max-height: none !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior-y: contain;
+    }
+    .app-shell > #main-content > .child-column::after {
+        height: calc(3.5rem + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+    }
+}
+@media (max-width: 767.98px) {
+    /* On narrow screens only main scrolls; the children expand naturally. */
+    .app-shell > #main-content {
+        display: block !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        max-height: none !important;
+        overscroll-behavior-y: contain;
+    }
+    .app-shell > #main-content > .child-column {
+        min-height: 0;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .app-shell > #main-content::after {
+        height: calc(3.5rem + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+    }
+}
+/* The dashboard is part of one vertical home scroll area, not a fourth
+   flex column that can push the note lists into a clipped second flex row. */
+.app-shell .app-home-sections > .child-column {
+    height: auto !important;
+    min-height: 0;
+    min-width: 0;
+    max-height: none !important;
+    overflow: visible !important;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+}
+@media (min-width: 768px) {
+    .app-shell .app-home-sections > .child-column {
+        flex-basis: 50%;
+        width: 50%;
+        max-width: 50%;
+    }
+}
+@media (min-width: 1200px) {
+    .app-shell .app-home-sections > .child-column {
+        flex-basis: 33.333333%;
+        width: 33.333333%;
+        max-width: 33.333333%;
+    }
+}
+

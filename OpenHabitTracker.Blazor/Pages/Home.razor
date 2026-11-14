@@ -5,6 +5,7 @@
 @inject IStringLocalizer Loc
 
 <PageTitle>OpenHabitTracker</PageTitle>
+<div class="col-12 child-column app-home-scroll">
 <section class="app-dashboard" aria-label="@Loc["Your overview"]">
     <span class="app-dashboard-label"><i class="bi bi-grid-1x2" aria-hidden="true"></i> @Loc["Your overview"]</span>
     <h1 class="app-dashboard-title">@Loc["Your overview"]</h1>
@@ -16,9 +17,12 @@
     </div>
 </section>
 
-<Notes IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
-<Tasks IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
-<Habits IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
+<div class="row app-home-sections g-3">
+    <Notes IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
+    <Tasks IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
+    <Habits IsEmbedded OnIsCollapsedChanged="OnIsCollapsedChanged" IsCollapsedChanged="_isCollapsedChanged" />
+</div>
+</div>
 
 @code {
     bool _isCollapsedChanged;
