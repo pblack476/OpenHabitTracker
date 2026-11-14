@@ -18,6 +18,10 @@
             {
                 <button type="button" role="menuitem" @onclick="() => Run(OnPin)"><i class="@($"bi {(IsPinned ? "bi-star-fill" : "bi-star")}")" aria-hidden="true"></i>@Loc[IsPinned ? "Unpin" : "Pin"]</button>
             }
+            @if (OnSaveTemplate.HasDelegate)
+            {
+                <button type="button" role="menuitem" @onclick="() => Run(OnSaveTemplate)"><i class="bi bi-journal-bookmark" aria-hidden="true"></i>@Loc["Save template"]</button>
+            }
             @if (OnCopy.HasDelegate)
             {
                 <button type="button" role="menuitem" @onclick="() => Run(OnCopy)"><i class="bi bi-clipboard" aria-hidden="true"></i>@Loc["Copy"]</button>
@@ -42,6 +46,7 @@
     [Parameter] public EventCallback OnEdit { get; set; }
     [Parameter] public EventCallback OnDuplicate { get; set; }
     [Parameter] public EventCallback OnPin { get; set; }
+    [Parameter] public EventCallback OnSaveTemplate { get; set; }
     [Parameter] public bool IsPinned { get; set; }
     [Parameter] public EventCallback OnCopy { get; set; }
     [Parameter] public EventCallback OnToday { get; set; }

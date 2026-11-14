@@ -30,6 +30,20 @@
 
     @if (TaskService.NewTask is null)
     {
+        @if (Workspace?.Templates.Where(t => t.Recurring == false).Any() == true)
+        {
+            <div class="input-group my-1">
+                <select class="form-select" aria-label="@Loc["Templates"]" @bind="_chosenTemplate">
+                    <option value="">@Loc["Templates"]</option>
+                    @foreach (PersonalWorkspaceState.TaskTemplate saved in Workspace.Templates.Where(t => t.Recurring == false))
+                    {
+                        <option value="@saved.Name">@saved.Name</option>
+                    }
+                </select>
+                <button class="btn btn-outline-secondary" disabled="@string.IsNullOrEmpty(_chosenTemplate)" @onclick="CreateFromTemplate">@Loc["Add"]</button>
+                <button class="btn btn-outline-danger" disabled="@string.IsNullOrEmpty(_chosenTemplate)" aria-label="@Loc["Delete"]" @onclick="RemoveTemplate"><i class="bi bi-trash" aria-hidden="true"></i></button>
+            </div>
+        }
         <button class="btn btn-outline-secondary app-paste-button my-1" aria-label="@Loc["Paste"]" title="@Loc["Paste"]" disabled="@(!ContentClipboard.CanPasteTask(ClientState.User.Id, ClientState.DataLocation))" @onclick="PasteCopied"><i class="bi bi-clipboard-plus" aria-hidden="true"></i><span class="d-none d-sm-inline ms-1">@Loc["Paste"]</span></button>
         <button class="btn btn-outline-secondary app-paste-button my-1" @onclick="() => _showBulkPaste = !_showBulkPaste"><i class="bi bi-list-ol" aria-hidden="true"></i> @Loc["Paste multiple"]</button>
         @if (_showBulkPaste)
@@ -200,7 +214,7 @@
                                 {
                                     <small class="input-group-text bg-transparent" data-tasks-step-3>@(task.IsPlannedDateOnly ? task.PlannedAt.Value.ToShortDateString() : task.PlannedAt.Value.Date == DateTime.Now.Date ? task.PlannedAt.Value.ToShortTimeString() : task.PlannedAt.Value.ToShortDateString())</small>
                                 }
-                                <ContentActions OnEdit="() => BeginQuick(task)" OnCopy="() => CopyExisting(task)" OnDuplicate="() => DuplicateExisting(task)" OnPin="() => TogglePin(task.Id)" IsPinned="@(Workspace?.IsPinned("tasks", task.Id) == true)" OnToday="() => RescheduleExisting(task, DateTime.Today)" OnTomorrow="() => RescheduleExisting(task, DateTime.Today.AddDays(1))" OnNextWeek="() => RescheduleExisting(task, NextMonday())" CanReschedule="task.CompletedAt is null" />
+                                <ContentActions OnEdit="() => BeginQuick(task)" OnCopy="() => CopyExisting(task)" OnDuplicate="() => DuplicateExisting(task)" OnSaveTemplate="() => SaveItemAsTemplate(task)" OnPin="() => TogglePin(task.Id)" IsPinned="@(Workspace?.IsPinned("tasks", task.Id) == true)" OnToday="() => RescheduleExisting(task, DateTime.Today)" OnTomorrow="() => RescheduleExisting(task, DateTime.Today.AddDays(1))" OnNextWeek="() => RescheduleExisting(task, NextMonday())" CanReschedule="task.CompletedAt is null" />
                                 <button class="@($"btn {(task.CompletedAt is null ? "btn-outline-primary" : "btn-primary")}")" aria-label="@Loc["Mark as done"]" @onclick="() => OnMarkAsDone(task)" data-tasks-step-4><i class="bi bi-check-square"></i></button>
                             </div>
 
@@ -566,6 +580,56 @@
     {
         await ItemService.Initialize(task);
         ContentClipboard.CopyTask(task, ClientState.User.Id, ClientState.DataLocation);
+    }
+
+
+    private string _chosenTemplate = string.Empty;
+
+    private async Task SaveItemAsTemplate(TaskModel task)
+    {
+        if (Workspace is not PersonalWorkspaceState workspace)
+            return;
+
+        await ItemService.Initialize(task);
+        await workspace.SaveTemplate(new PersonalWorkspaceState.TaskTemplate
+        {
+            Name = task.Title,
+            Title = task.Title,
+            Items = task.Items?.Select(item => item.Title).ToList() ?? [],
+            Priority = task.Priority,
+            CategoryId = task.CategoryId,
+            Recurring = false,
+
+        });
+        _chosenTemplate = task.Title;
+    }
+
+    private void CreateFromTemplate()
+    {
+        if (TaskService.NewTask is not null || Workspace is not PersonalWorkspaceState workspace)
+            return;
+        PersonalWorkspaceState.TaskTemplate? template = workspace.Templates.FirstOrDefault(t => t.Name == _chosenTemplate && t.Recurring == false);
+        if (template is null)
+            return;
+        TaskService.NewTask = new TaskModel
+        {
+            Title = template.Title,
+            CategoryId = template.CategoryId,
+            Priority = template.Priority,
+            Color = "bg-info-subtle",
+            Items = template.Items.Select(title => new ItemModel { Title = title }).ToList(),
+
+        };
+        shouldFocus = true;
+    }
+
+    private async Task RemoveTemplate()
+    {
+        if (Workspace is PersonalWorkspaceState workspace && !string.IsNullOrWhiteSpace(_chosenTemplate))
+        {
+            await workspace.RemoveTemplate(_chosenTemplate);
+            _chosenTemplate = string.Empty;
+        }
     }
 
     async Task DuplicateExisting(TaskModel task)
