@@ -12,6 +12,7 @@
 @inject IItemService ItemService
 @inject IStringLocalizer Loc
 @inject IGTourService GTourService
+@inject IServiceProvider Services
 
 <div id="task-component" class="@Task.Color" role="region" aria-label="@Loc["Edit task"]" tabindex="-1" @onkeydown="HandleKeyDown">
     <div class="input-group flex-nowrap" data-tasks-step-7>
@@ -36,6 +37,23 @@
         <InputDate class="form-control" Type="InputDateType.Date" aria-label="@Loc["Planned at"]" Value="Task.PlannedDate" ValueExpression="() => Task.PlannedDate" ValueChanged="(DateTime? plannedDate) => SavePlannedDate(Task, plannedDate)" />
         <InputDate class="form-control w-auto flex-grow-0" Type="InputDateType.Time" aria-label="@Loc["Time"]" Value="Task.PlannedTime" ValueExpression="() => Task.PlannedTime" ValueChanged="(TimeOnly? plannedTime) => SavePlannedTime(Task, plannedTime)" />
     </div>
+
+    @if (Task.PlannedTime is not null && Workspace is not null)
+    {
+        <div class="input-group">
+            <label class="input-group-text bg-transparent" for="reminder-task-@Task.Id">@Loc["Reminder for this task"]</label>
+            <select class="form-select" id="reminder-task-@Task.Id" @bind="_reminderSelection" @bind:after="SaveReminder">
+                <option value="-2">@Loc["Use global reminder"]</option>
+                <option value="-1">@Loc["Off"]</option>
+                <option value="0">@Loc["At scheduled time"]</option>
+                <option value="5">5 min</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="60">1 h</option>
+                <option value="1440">1 @Loc["Day"]</option>
+            </select>
+        </div>
+    }
 
     <div class="input-group" data-tasks-step-13>
         <span class="input-group-text bg-transparent">@Loc["Duration"]</span>
@@ -136,6 +154,28 @@
 }
 
 @code {
+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
+    private int _reminderSelection = -2;
+    private long _reminderTaskId = -1;
+
+    protected override void OnParametersSet()
+    {
+        if (_reminderTaskId == Task.Id)
+            return;
+        _reminderTaskId = Task.Id;
+        _reminderSelection = Workspace?.GetReminderSelection(Task.Id) ?? -2;
+    }
+
+    private async Task SaveReminder()
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+        {
+            await workspace.SetReminderSelection(Task.Id, _reminderSelection);
+            if (Services.GetService(typeof(INotificationScheduler)) is INotificationScheduler scheduler)
+                await scheduler.Rebuild();
+        }
+    }
+
     async Task CopyToClipboard()
     {
         // Also capture lazily loaded checklist items before taking the snapshot.
