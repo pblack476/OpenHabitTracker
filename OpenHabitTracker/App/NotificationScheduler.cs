@@ -9,12 +9,13 @@ namespace OpenHabitTracker.App;
 
 // Turns what NotificationSchedule says should fire into localized requests and hands the whole set
 // to the platform. Everything that can change the answer calls Rebuild.
-public class NotificationScheduler(ClientState clientState, INotifications notifications, IStringLocalizer loc, ILogger<NotificationScheduler> logger) : INotificationScheduler
+public class NotificationScheduler(ClientState clientState, INotifications notifications, IStringLocalizer loc, ILogger<NotificationScheduler> logger, ITaskReminderOverrides? reminderOverrides = null) : INotificationScheduler
 {
     private readonly ClientState _clientState = clientState;
     private readonly INotifications _notifications = notifications;
     private readonly IStringLocalizer _loc = loc;
     private readonly ILogger<NotificationScheduler> _logger = logger;
+    private readonly ITaskReminderOverrides? _reminderOverrides = reminderOverrides;
 
     public async Task Rebuild()
     {
@@ -36,7 +37,7 @@ public class NotificationScheduler(ClientState clientState, INotifications notif
 
         SettingsModel settings = _clientState.Settings;
 
-        if (settings.NotificationTime is null && settings.NotificationLeadMinutes is null)
+        if (settings.NotificationTime is null && settings.NotificationLeadMinutes is null && _reminderOverrides?.HasEnabledOverrides != true)
         {
             _logger.LogInformation("Notifications off, cancelling all");
 
@@ -51,7 +52,8 @@ public class NotificationScheduler(ClientState clientState, INotifications notif
             _clientState.Tasks?.Values ?? Enumerable.Empty<TaskModel>(),
             _clientState.Habits?.Values ?? Enumerable.Empty<HabitModel>(),
             settings,
-            DateTime.Now);
+            DateTime.Now,
+            _reminderOverrides is null ? null : taskId => _reminderOverrides.ResolveLeadMinutes(taskId, settings.NotificationLeadMinutes));
 
         List<NotificationRequest> requests = scheduled.Select(ToRequest).ToList();
 

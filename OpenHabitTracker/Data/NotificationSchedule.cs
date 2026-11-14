@@ -36,7 +36,7 @@ public static class NotificationSchedule
     // even - and every day with nothing due leaves its slot to a task reminder instead.
     public const int HorizonDays = 32;
 
-    public static List<ScheduledNotification> Build(IEnumerable<TaskModel> tasks, IEnumerable<HabitModel> habits, SettingsModel settings, DateTime now)
+    public static List<ScheduledNotification> Build(IEnumerable<TaskModel> tasks, IEnumerable<HabitModel> habits, SettingsModel settings, DateTime now, Func<long, int?>? getLeadMinutes = null)
     {
         List<ScheduledNotification> result = new();
 
@@ -48,17 +48,16 @@ public static class NotificationSchedule
             ? new()
             : habits.Where(habit => !habit.IsDeleted && habit.Priority >= settings.NotificationMinimumPriority).ToList();
 
-        if (settings.NotificationLeadMinutes is int leadMinutes)
+        foreach (TaskModel task in candidateTasks.Where(task => task.PlannedTime is not null))
         {
-            foreach (TaskModel task in candidateTasks.Where(task => task.PlannedTime is not null))
-            {
-                DateTime notifyAt = task.PlannedAt!.Value.AddMinutes(-leadMinutes);
+            int? leadMinutes = getLeadMinutes is null ? settings.NotificationLeadMinutes : getLeadMinutes(task.Id);
+            if (leadMinutes is not int lead || lead is < 0 or > 43200)
+                continue;
 
-                // A moment already past is never scheduled, which is the same rule as announcing
-                // nothing that fell due while the app was closed.
-                if (notifyAt > now)
-                    result.Add(new ScheduledNotification { NotifyAt = notifyAt, Kind = NotificationKind.TaskReminder, TaskId = task.Id });
-            }
+            DateTime notifyAt = task.PlannedAt!.Value.AddMinutes(-lead);
+            // Never schedule already elapsed reminders.
+            if (notifyAt > now)
+                result.Add(new ScheduledNotification { NotifyAt = notifyAt, Kind = NotificationKind.TaskReminder, TaskId = task.Id });
         }
 
         if (settings.NotificationTime is TimeOnly summaryTime)
