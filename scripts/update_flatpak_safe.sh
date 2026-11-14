@@ -102,6 +102,18 @@ step "Compilando e instalando Flatpak sem desinstalar nem limpar dados"
 
 flatpak info --user "$APP_ID" >/dev/null 2>&1 || die "Build finalizou, mas a instalação do Flatpak do usuário não foi localizada."
 
+step "Configurando lembretes com o Flatpak fechado"
+if [[ -f "$SOURCE/scripts/install_flatpak_notification_timer.sh" ]]; then
+    if bash "$SOURCE/scripts/install_flatpak_notification_timer.sh"; then
+        echo "Timer de lembretes habilitado para a sessão do usuário."
+    else
+        echo "AVISO: o timer não foi ativado (systemd --user pode estar indisponível)." >&2
+        echo "A atualização do aplicativo foi concluída; lembretes continuarão funcionando com a janela aberta." >&2
+    fi
+else
+    echo "Aviso: esta versão não inclui o instalador do timer." >&2
+fi
+
 step "ATUALIZAÇÃO CONCLUÍDA"
 printf 'Dados preservados em: %s\n' "$DATA_ROOT"
 printf 'Backups verificados em: %s\n' "$BACKUP_ROOT"

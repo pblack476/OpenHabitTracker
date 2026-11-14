@@ -127,3 +127,22 @@ dotnet test OpenHabitTracker.UnitTests/OpenHabitTracker.UnitTests.csproj
 ```
 
 A suíte cobre também clonagem sem IDs/histórico e ordenação por urgência.
+
+## Verificador de notificações sem a janela aberta
+
+Depois da atualização, se `systemd --user` estiver disponível, o instalador configura
+`openhabittracker-notifications.timer`. Veja o estado:
+
+```bash
+systemctl --user status openhabittracker-notifications.timer
+journalctl --user -u openhabittracker-notifications.service -n 30 --no-pager
+```
+
+O timer atua aproximadamente uma vez por minuto durante a sessão gráfica.
+Ele não funciona com o computador desligado e pode entregar lembretes atrasados
+após suspensão. Se o sistema não tiver `systemd --user`, a atualização do
+aplicativo não falha, mas os avisos continuam dependentes da janela aberta.
+O programa usa o portal de notificações, e a confirmação de visualização não
+é observável pelo aplicativo.
+
+Veja `BACKGROUND-NOTIFICATIONS.pt-BR.md` para detalhes e desativação.
