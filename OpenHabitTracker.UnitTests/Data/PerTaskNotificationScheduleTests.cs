@@ -26,7 +26,7 @@ public class PerTaskNotificationScheduleTests
     public void DigestHabitOnly_DoesNotSuppressIndependentTaskReminder()
     {
         DateTime now = new(2026, 11, 15, 8, 0, 0);
-        TaskModel task = new() { Id = 4, Title = "Appointment", PlannedAt = now.AddMinutes(15) };
+        TaskModel task = new() { Id = 4, Title = "Appointment", PlannedAt = now.AddMinutes(16) };
         SettingsModel settings = SettingsModel.GetDefaultSettings(1);
         settings.NotificationContent = DigestContent.Habits;
         settings.NotificationLeadMinutes = null;

@@ -228,12 +228,17 @@ public class NotificationScheduleTests
     }
 
     [Test]
-    public void Build_ContentHabitsOnly_IgnoresTasks()
+    public void Build_ContentHabitsOnly_KeepsIndependentTaskReminder()
     {
         List<ScheduledNotification> result = NotificationSchedule.Build(
             [UntimedTask(Now), TimedTask(Now.AddHours(4), id: 2)], [], Settings(content: DigestContent.Habits), Now);
 
-        Assert.That(result, Is.Empty);
+        Assert.That(result, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Kind, Is.EqualTo(NotificationKind.TaskReminder));
+            Assert.That(result[0].TaskId, Is.EqualTo(2));
+        });
     }
 
     [Test]
