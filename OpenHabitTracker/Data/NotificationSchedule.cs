@@ -40,9 +40,10 @@ public static class NotificationSchedule
     {
         List<ScheduledNotification> result = new();
 
-        List<TaskModel> candidateTasks = settings.NotificationContent == DigestContent.Habits
-            ? new()
-            : tasks.Where(task => !task.IsDeleted && task.CompletedAt is null && task.PlannedAt.HasValue && task.Priority >= settings.NotificationMinimumPriority).ToList();
+        // The digest content setting controls only the summary, not independent
+        // reminders for timed tasks (including per-task reminders).
+        List<TaskModel> candidateTasks = tasks
+            .Where(task => !task.IsDeleted && task.CompletedAt is null && task.PlannedAt.HasValue && task.Priority >= settings.NotificationMinimumPriority).ToList();
 
         List<HabitModel> candidateHabits = settings.NotificationContent == DigestContent.Tasks
             ? new()
@@ -70,7 +71,7 @@ public static class NotificationSchedule
                 if (notifyAt <= now)
                     continue;
 
-                List<long> taskIds = candidateTasks
+                List<long> taskIds = (settings.NotificationContent == DigestContent.Habits ? Enumerable.Empty<TaskModel>() : candidateTasks)
                     .Where(task => IsInDigest(task, day, notifyAt, settings))
                     .OrderBy(task => task.PlannedAt)
                     .ThenBy(task => task.Title)

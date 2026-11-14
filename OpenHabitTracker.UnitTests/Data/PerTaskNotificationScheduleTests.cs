@@ -23,6 +23,21 @@ public class PerTaskNotificationScheduleTests
     }
 
     [Test]
+    public void DigestHabitOnly_DoesNotSuppressIndependentTaskReminder()
+    {
+        DateTime now = new(2026, 11, 15, 8, 0, 0);
+        TaskModel task = new() { Id = 4, Title = "Appointment", PlannedAt = now.AddMinutes(15) };
+        SettingsModel settings = SettingsModel.GetDefaultSettings(1);
+        settings.NotificationContent = DigestContent.Habits;
+        settings.NotificationLeadMinutes = null;
+        settings.NotificationTime = null;
+
+        List<ScheduledNotification> reminders = NotificationSchedule.Build([task], [], settings, now,
+            id => id == 4 ? 15 : null);
+        Assert.That(reminders.Single().TaskId, Is.EqualTo(4));
+    }
+
+    [Test]
     public void PerTaskOverride_CanDisableGlobalReminder()
     {
         DateTime now = new(2026, 11, 15, 8, 0, 0);
