@@ -1,10 +1,13 @@
 @page "/calendar"
 @using OpenHabitTracker.Data.Models
+@using OpenHabitTracker.Data
 @using OpenHabitTracker.Query
 @using OpenHabitTracker.Services
 @using OpenHabitTracker.App
 @inject ClientState ClientState
 @inject ITaskService TaskService
+@inject IHabitService HabitService
+@inject IServiceProvider Services
 @inject IStringLocalizer Loc
 
 <PageTitle>OpenHabitTracker - @Loc["Calendar"]</PageTitle>
@@ -34,7 +37,7 @@
         <div class="app-calendar-grid" role="group" aria-label="@Loc["Calendar"]">
             @foreach (DateTime day in VisibleDates)
             {
-                int count = GetTasksForDay(day).Count;
+                int count = GetTasksForDay(day).Count + GetRecurringForDay(day).Count;
                 <button @key="day" class="app-calendar-day" type="button" data-selected="@(day == _selected.Date)" data-today="@(day == DateTime.Today)" data-in-month="@(day.Month == _selected.Month)" aria-label="@day.ToString("D")" aria-pressed="@(day == _selected.Date)" @onclick="() => SelectDate(day)">
                     <span class="app-calendar-date">@day.Day</span>
                     @if (count > 0)
@@ -47,7 +50,7 @@
     }
 
     <section class="app-today-panel" aria-label="@_selected.ToString("D")">
-        <h2>@_selected.ToString("D") — @GetTasksForDay(_selected).Count @Loc["Tasks"]</h2>
+        <h2>@_selected.ToString("D") — @(GetTasksForDay(_selected).Count + GetRecurringForDay(_selected).Count) @Loc["Tasks and habits"]</h2>
         <div class="app-calendar-agenda">
             @foreach (TaskModel task in GetTasksForDay(_selected))
             {
@@ -57,7 +60,16 @@
                     <button class="btn btn-sm btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="() => TaskService.MarkAsDone(task)"><i class="bi bi-check2" aria-hidden="true"></i></button>
                 </div>
             }
-            @if (GetTasksForDay(_selected).Count == 0)
+            @foreach (HabitModel habit in GetRecurringForDay(_selected))
+            {
+                <div class="app-today-entry" @key="@($"recurring-{habit.Id}")">
+                    <a href="@($"/habits/{habit.Id}")"><i class="bi bi-repeat" aria-hidden="true"></i> @habit.Title</a>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => SkipOccurrence(habit, _selected)">@Loc["Skip occurrence"]</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => PostponeOccurrence(habit, _selected)">@Loc["Postpone"]</button>
+                    <button class="btn btn-sm btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="() => CompleteRecurring(habit)"><i class="bi bi-check2" aria-hidden="true"></i></button>
+                </div>
+            }
+            @if (GetTasksForDay(_selected).Count == 0 && GetRecurringForDay(_selected).Count == 0)
             {
                 <p class="text-body-secondary m-0">@Loc["No tasks planned"]</p>
             }
@@ -74,7 +86,39 @@
         ? PlannerCalendar.MonthGrid(_selected, ClientState.Settings.FirstDayOfWeek)
         : PlannerCalendar.WeekGrid(_selected, ClientState.Settings.FirstDayOfWeek);
 
-    protected override async Task OnInitializedAsync() => await TaskService.Initialize();
+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TaskService.Initialize();
+        await HabitService.Initialize();
+        await HabitService.LoadAllTimesDone();
+    }
+
+    private List<HabitModel> GetRecurringForDay(DateTime day)
+        => HabitService.Habits?.Where(h => !h.IsDeleted &&
+            Workspace?.GetCalendarRule(h.Id) is CalendarRecurrenceRule rule &&
+            CalendarRecurrence.IsDue(rule, day, h.StartAt) &&
+            !CalendarRecurrence.IsCompletedOn(day, h.TimesDone))
+            .OrderByDescending(h => h.Priority).ToList() ?? [];
+
+    private async Task SkipOccurrence(HabitModel habit, DateTime day)
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.SkipOccurrence(habit.Id, day);
+    }
+
+    private async Task PostponeOccurrence(HabitModel habit, DateTime day)
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.PostponeOccurrence(habit.Id, day, day.AddDays(1));
+    }
+
+    private async Task CompleteRecurring(HabitModel habit)
+    {
+        await HabitService.LoadTimesDone(habit);
+        await HabitService.MarkAsDone(habit);
+    }
 
     private List<TaskModel> GetTasksForDay(DateTime day)
         => TaskService.Tasks?.Where(t => !t.IsDeleted && t.CompletedAt is null && t.PlannedAt?.Date == day.Date)

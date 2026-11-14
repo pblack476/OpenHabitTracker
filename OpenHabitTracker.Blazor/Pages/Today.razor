@@ -1,5 +1,6 @@
 @page "/today"
 @using OpenHabitTracker.App
+@using OpenHabitTracker.Data
 @using OpenHabitTracker.Data.Models
 @using OpenHabitTracker.Query
 @using OpenHabitTracker.Services
@@ -7,6 +8,7 @@
 @inject ITaskService TaskService
 @inject IHabitService HabitService
 @inject IStringLocalizer Loc
+@inject IServiceProvider Services
 
 <PageTitle>OpenHabitTracker - @Loc["Today"]</PageTitle>
 
@@ -61,6 +63,11 @@
                     <div class="app-today-entry" @key="habit.Id">
                         <a href="@($"/habits/{habit.Id}")">@habit.Title</a>
                         <span class="app-today-meta">@habit.GetRatio(ClientState.Settings.SelectedRatio).ToString("N0")%</span>
+                        @if (Workspace?.GetCalendarRule(habit.Id) is not null)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => SkipToday(habit)">@Loc["Skip occurrence"]</button>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => PostponeTomorrow(habit)">@Loc["Postpone"]</button>
+                        }
                         <button class="btn btn-sm btn-outline-primary" aria-label="@Loc["Mark as done"]" @onclick="() => CompleteRecurring(habit)"><i class="bi bi-check2" aria-hidden="true"></i></button>
                     </div>
                 }
@@ -73,7 +80,17 @@
     private List<TaskModel> OverdueTasks => TodayAgenda.Overdue(TaskService.Tasks ?? [], DateTime.Now).ToList();
     private List<TaskModel> TodayTasks => TodayAgenda.Today(TaskService.Tasks ?? [], DateTime.Now).ToList();
     private List<TaskModel> UpcomingTasks => TodayAgenda.Upcoming(TaskService.Tasks ?? [], DateTime.Now).ToList();
-    private List<HabitModel> RecurringTasks => TodayAgenda.RecurringDue(HabitService.Habits ?? [], ClientState.Settings.SelectedRatio).ToList();
+    private PersonalWorkspaceState? Workspace => Services.GetService(typeof(PersonalWorkspaceState)) as PersonalWorkspaceState;
+
+    private List<HabitModel> RecurringTasks => HabitService.Habits?
+        .Where(h => !h.IsDeleted && (
+            Workspace?.GetCalendarRule(h.Id) is CalendarRecurrenceRule rule
+                ? CalendarRecurrence.IsDue(rule, DateTime.Today, h.StartAt) &&
+                  !CalendarRecurrence.IsCompletedOn(DateTime.Today, h.TimesDone)
+                : double.IsFinite(h.GetRatio(ClientState.Settings.SelectedRatio)) &&
+                  h.GetRatio(ClientState.Settings.SelectedRatio) >= 80))
+        .OrderByDescending(h => h.Priority)
+        .ToList() ?? [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -85,6 +102,18 @@
     private async Task CompleteTask(TaskModel task)
     {
         await TaskService.MarkAsDone(task);
+    }
+
+    private async Task SkipToday(HabitModel habit)
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.SkipOccurrence(habit.Id, DateTime.Today);
+    }
+
+    private async Task PostponeTomorrow(HabitModel habit)
+    {
+        if (Workspace is PersonalWorkspaceState workspace)
+            await workspace.PostponeOccurrence(habit.Id, DateTime.Today, DateTime.Today.AddDays(1));
     }
 
     private async Task CompleteRecurring(HabitModel habit)
