@@ -11,13 +11,15 @@ namespace OpenHabitTracker.Blazor.Photino;
 // RemoveNotification and nothing else, so this host fires from a timer while it runs.
 // The portal is used rather than org.freedesktop.Notifications directly, because Flatpak's
 // default bus policy allows org.freedesktop.portal.* and the manifest carries no --talk-name.
-public sealed class Notifications(ILogger<Notifications> logger) : RunningOnlyNotifications
+public sealed class Notifications(ILogger<Notifications> logger, string dataDirectory) : RunningOnlyNotifications
 {
     private const string PortalService = "org.freedesktop.portal.Desktop";
     private const string PortalPath = "/org/freedesktop/portal/desktop";
     private const string PortalInterface = "org.freedesktop.portal.Notification";
 
     private readonly ILogger<Notifications> _logger = logger;
+    private readonly string _dataDirectory = dataDirectory;
+    private readonly Dictionary<string, string> _titleByRoute = new();
 
     private bool _connected;
 
@@ -44,59 +46,64 @@ public sealed class Notifications(ILogger<Notifications> logger) : RunningOnlyNo
         try
         {
             DBusConnection connection = DBusConnection.Session;
-
             if (!_connected)
             {
                 await connection.ConnectAsync();
                 _connected = true;
             }
-
             await WatchActions(connection);
 
             _routesById[request.Id] = request.Route;
+            _titleByRoute[request.Route] = request.Title;
+            await DesktopPortalNotificationSender.Send(request, withButtons: true);
 
-            MessageWriter writer = connection.GetMessageWriter();
-
-            writer.WriteMethodCallHeader(
-                destination: PortalService,
-                path: PortalPath,
-                @interface: PortalInterface,
-                member: "AddNotification",
-                signature: "sa{sv}",
-                flags: MessageFlags.None);
-
-            writer.WriteString(request.Id);
-
-            ArrayStart dictionary = writer.WriteDictionaryStart();
-
-            writer.WriteDictionaryEntryStart();
-            writer.WriteString("title");
-            writer.WriteVariantString(request.Title);
-
-            if (!string.IsNullOrEmpty(request.Body))
+            // A temporary snooze was delivered while the GUI was still running.
+            // Remove its headless counterpart before the next background tick.
+            if (request.Id.StartsWith("snooze-", StringComparison.Ordinal) &&
+                TryTaskId(request.Route, out long taskId))
             {
-                writer.WriteDictionaryEntryStart();
-                writer.WriteString("body");
-                writer.WriteVariantString(request.Body);
+                await DesktopReminderState.Change(_dataDirectory, state =>
+                {
+                    if (state.Snoozes.TryGetValue(taskId, out DateTime due) &&
+                        due <= DateTime.Now)
+                        state.Snoozes.Remove(taskId);
+                    return Task.FromResult(0);
+                });
             }
-
-            // Without a default action the portal has nothing to report when the body is clicked.
-            writer.WriteDictionaryEntryStart();
-            writer.WriteString("default-action");
-            writer.WriteVariantString("open");
-
-            writer.WriteDictionaryEnd(dictionary);
-
-            MessageBuffer message = writer.CreateMessage();
-
-            await connection.CallMethodAsync(message);
         }
         catch (Exception exception)
         {
-            // A desktop with no notification portal is not a reason to break the app.
             _logger.LogError(exception, "Showing a notification failed");
         }
     }
+
+    public override async Task Snooze(string route, TimeSpan delay)
+    {
+        if (!TryTaskId(route, out long taskId) || delay <= TimeSpan.Zero)
+            return;
+
+        DateTime when = DateTime.Now.Add(delay);
+        await DesktopReminderState.Change(_dataDirectory, state =>
+        {
+            state.Snoozes[taskId] = when;
+            return Task.FromResult(0);
+        });
+
+        QueueTemporary(new NotificationRequest
+        {
+            Id = $"snooze-{taskId}-{when.Ticks}",
+            Route = route,
+            Title = _titleByRoute.TryGetValue(route, out string? title) ? title : "OpenHabitTracker",
+            Body = "",
+            NotifyAt = when,
+            SnoozeLabel = "Adiar 10 min",
+            CompleteLabel = "Concluir"
+        });
+    }
+
+    private static bool TryTaskId(string route, out long taskId)
+        => route.StartsWith("/tasks/", StringComparison.Ordinal) &&
+           long.TryParse(route.Substring("/tasks/".Length), out taskId);
 
     private async Task WatchActions(DBusConnection connection)
     {
@@ -110,23 +117,37 @@ public sealed class Notifications(ILogger<Notifications> logger) : RunningOnlyNo
             path: PortalPath,
             @interface: PortalInterface,
             signal: "ActionInvoked",
-            reader: ReadNotificationId,
+            reader: ReadNotificationAction,
             handler: OnActionInvoked,
             flags: ObserverFlags.None,
             emitOnCapturedContext: false);
     }
 
-    private static string ReadNotificationId(Message message, object? state)
+    private readonly record struct PortalAction(string Id, string Action);
+
+    private static PortalAction ReadNotificationAction(Message message, object? state)
     {
         Reader reader = message.GetBodyReader();
-
-        return reader.ReadString();
+        return new(reader.ReadString(), reader.ReadString());
     }
 
-    // A closed connection or a failed read also arrives here, carrying no value.
-    private void OnActionInvoked(Notification<string> notification)
+    private void OnActionInvoked(Notification<PortalAction> notification)
     {
-        if (notification.HasValue && _routesById.TryGetValue(notification.Value, out string? route))
+        if (!notification.HasValue ||
+            !_routesById.TryGetValue(notification.Value.Id, out string? route))
+            return;
+
+        if (notification.Value.Action is "snooze" or "complete")
+        {
+            _ = OnAction(route, notification.Value.Action).ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                    _logger.LogError(task.Exception, "Notification action failed");
+            });
+        }
+        else
+        {
             OnActivated(route);
+        }
     }
 }

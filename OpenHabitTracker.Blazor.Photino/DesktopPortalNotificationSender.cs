@@ -13,7 +13,7 @@ public static class DesktopPortalNotificationSender
     private const string Path = "/org/freedesktop/portal/desktop";
     private const string Interface = "org.freedesktop.portal.Notification";
 
-    public static async Task Send(NotificationRequest request)
+    public static async Task Send(NotificationRequest request, bool withButtons = false)
     {
         DBusConnection connection = DBusConnection.Session;
         await connection.ConnectAsync();
@@ -37,6 +37,26 @@ public static class DesktopPortalNotificationSender
         writer.WriteDictionaryEntryStart();
         writer.WriteString("default-action");
         writer.WriteVariantString("open");
+
+        if (withButtons && request.Route.StartsWith("/tasks/", StringComparison.Ordinal))
+        {
+            var buttons = new Tmds.DBus.Protocol.Array<Tmds.DBus.Protocol.Dict<string, VariantValue>>
+            {
+                new Tmds.DBus.Protocol.Dict<string, VariantValue>
+                {
+                    { "label", request.SnoozeLabel },
+                    { "action", "snooze" }
+                },
+                new Tmds.DBus.Protocol.Dict<string, VariantValue>
+                {
+                    { "label", request.CompleteLabel },
+                    { "action", "complete" }
+                }
+            };
+            writer.WriteDictionaryEntryStart();
+            writer.WriteString("buttons");
+            writer.WriteVariant(buttons);
+        }
         writer.WriteDictionaryEnd(dictionary);
 
         await connection.CallMethodAsync(writer.CreateMessage());
