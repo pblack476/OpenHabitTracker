@@ -159,10 +159,26 @@
                                 {
                                     <small class="input-group-text bg-transparent" data-tasks-step-3>@(task.IsPlannedDateOnly ? task.PlannedAt.Value.ToShortDateString() : task.PlannedAt.Value.Date == DateTime.Now.Date ? task.PlannedAt.Value.ToShortTimeString() : task.PlannedAt.Value.ToShortDateString())</small>
                                 }
-                                <ContentActions OnEdit="() => OpenSelected(task.Id)" OnCopy="() => CopyExisting(task)" OnDuplicate="() => DuplicateExisting(task)" OnToday="() => RescheduleExisting(task, DateTime.Today)" OnTomorrow="() => RescheduleExisting(task, DateTime.Today.AddDays(1))" OnNextWeek="() => RescheduleExisting(task, NextMonday())" CanReschedule="task.CompletedAt is null" />
+                                <ContentActions OnEdit="() => BeginQuick(task)" OnCopy="() => CopyExisting(task)" OnDuplicate="() => DuplicateExisting(task)" OnToday="() => RescheduleExisting(task, DateTime.Today)" OnTomorrow="() => RescheduleExisting(task, DateTime.Today.AddDays(1))" OnNextWeek="() => RescheduleExisting(task, NextMonday())" CanReschedule="task.CompletedAt is null" />
                                 <button class="@($"btn {(task.CompletedAt is null ? "btn-outline-primary" : "btn-primary")}")" aria-label="@Loc["Mark as done"]" @onclick="() => OnMarkAsDone(task)" data-tasks-step-4><i class="bi bi-check-square"></i></button>
                             </div>
 
+                            @if (_quickTaskId == task.Id)
+                            {
+                                <div class="app-inline-editor">
+                                    <input class="form-control" aria-label="@Loc["Task title"]" @bind="_quickTitle" @bind:event="oninput" />
+                                    <InputSelect class="form-select" aria-label="@Loc["Priority"]" @bind-Value="_quickPriority">
+                                        @foreach (Priority p in Enum.GetValues<Priority>())
+                                        {
+                                            <option value="@p">@Loc[PriorityService.GetPriorityName(p)]</option>
+                                        }
+                                    </InputSelect>
+                                    <InputDate class="form-control" Type="InputDateType.Date" aria-label="@Loc["Planned at"]" @bind-Value="_quickDate" />
+                                    <InputDate class="form-control" Type="InputDateType.Time" aria-label="@Loc["Time"]" @bind-Value="_quickTime" />
+                                    <button class="btn btn-primary btn-sm" disabled="@string.IsNullOrWhiteSpace(_quickTitle)" @onclick="() => SaveQuick(task)">@Loc["Save"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _quickTaskId = null">@Loc["Close"]</button>
+                                </div>
+                            }
                             @if (task.CompletedAt is null && UrgencyOrder.GetTaskBucket(task, DateTime.Now) == UrgencyOrder.TaskBucket.Overdue)
                             {
                                 <span class="app-urgency-pill app-urgency-overdue"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> @Loc["Overdue"]</span>
@@ -401,6 +417,34 @@
     {
         ClientState.Settings.SortBy[ContentType.Task] = Sort.Urgency;
         await ClientState.UpdateSettings();
+    }
+
+    long? _quickTaskId;
+    string _quickTitle = string.Empty;
+    Priority _quickPriority;
+    DateTime? _quickDate;
+    TimeOnly? _quickTime;
+
+    void BeginQuick(TaskModel task)
+    {
+        _quickTaskId = task.Id;
+        _quickTitle = task.Title;
+        _quickPriority = task.Priority;
+        _quickDate = task.PlannedAt?.Date;
+        _quickTime = task.PlannedTime;
+    }
+
+    async Task SaveQuick(TaskModel task)
+    {
+        if (string.IsNullOrWhiteSpace(_quickTitle))
+            return;
+
+        DateTime? planned = _quickDate is DateTime date
+            ? date.Date + (_quickTime?.ToTimeSpan() ?? TaskModel.DateOnlySentinel)
+            : null;
+        await TaskService.QuickUpdate(task, _quickTitle, _quickPriority, planned);
+        _quickTaskId = null;
+        _pageStateChanged = !_pageStateChanged;
     }
 
     async Task CopyExisting(TaskModel task)

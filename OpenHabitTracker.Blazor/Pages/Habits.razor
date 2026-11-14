@@ -190,7 +190,7 @@
                                 }
 
                                 <button id="habit-item-@habit.Id" class="input-group-text bg-transparent flex-grow-1 text-wrap highlightable d-flex align-items-center" title="@habit.Title" @onclick="() => OpenSelected(habit.Id)" data-habits-step-2><span class="title-clamp">@((MarkupString)SearchFilterService.MarkSearchResults(habit.Title))</span></button>
-                                <ContentActions OnEdit="() => OpenSelected(habit.Id)" OnCopy="() => CopyExisting(habit)" OnDuplicate="() => DuplicateExisting(habit)" />
+                                <ContentActions OnEdit="() => BeginQuick(habit)" OnCopy="() => CopyExisting(habit)" OnDuplicate="() => DuplicateExisting(habit)" />
 
                                 @{
                                     string color = habit.GetRatio(ClientState.Settings.SelectedRatio) switch
@@ -211,6 +211,20 @@
                                 }
                             </div>
 
+                            @if (_quickHabitId == habit.Id)
+                            {
+                                <div class="app-inline-editor">
+                                    <input class="form-control" aria-label="@Loc["Habit title"]" @bind="_quickTitle" @bind:event="oninput" />
+                                    <InputSelect class="form-select" aria-label="@Loc["Priority"]" @bind-Value="_quickPriority">
+                                        @foreach (Priority p in Enum.GetValues<Priority>())
+                                        {
+                                            <option value="@p">@Loc[PriorityService.GetPriorityName(p)]</option>
+                                        }
+                                    </InputSelect>
+                                    <button class="btn btn-primary btn-sm" disabled="@string.IsNullOrWhiteSpace(_quickTitle)" @onclick="() => SaveQuick(habit)">@Loc["Save"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _quickHabitId = null">@Loc["Close"]</button>
+                                </div>
+                            }
                             @if (ClientState.Settings.ShowItemList)
                             {
                                 <div data-habits-step-5>
@@ -424,6 +438,27 @@
     {
         ClientState.Settings.SortBy[ContentType.Habit] = Sort.Urgency;
         await ClientState.UpdateSettings();
+    }
+
+    long? _quickHabitId;
+    string _quickTitle = string.Empty;
+    Priority _quickPriority;
+
+    void BeginQuick(HabitModel habit)
+    {
+        _quickHabitId = habit.Id;
+        _quickTitle = habit.Title;
+        _quickPriority = habit.Priority;
+    }
+
+    async Task SaveQuick(HabitModel habit)
+    {
+        if (string.IsNullOrWhiteSpace(_quickTitle))
+            return;
+
+        await HabitService.QuickUpdate(habit, _quickTitle, _quickPriority);
+        _quickHabitId = null;
+        _pageStateChanged = !_pageStateChanged;
     }
 
     async Task CopyExisting(HabitModel habit)

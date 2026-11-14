@@ -471,3 +471,9 @@ html, body {
 // Q05: readable textarea for pasting many tasks/checklist entries at once.
 .app-bulk-paste { padding:.75rem; margin:.5rem 0; background:var(--bs-body-bg); border:1px solid var(--bs-primary-border-subtle); border-radius:12px; }
 .app-bulk-paste textarea { min-height:6rem; max-height:18rem; overflow-y:auto; }
+
+// Q03: small in-list editor for frequently changed fields.
+.app-inline-editor { display:flex; flex-wrap:wrap; align-items:center; gap:.45rem; padding:.65rem; background:var(--bs-body-bg); border-top:1px solid var(--bs-border-color-translucent); }
+.app-inline-editor > .form-control { flex:2 1 10rem; min-width:6rem; }
+.app-inline-editor > .form-select { flex:1 1 8rem; }
+.app-inline-editor > input[type=date],.app-inline-editor > input[type=time] { flex:1 1 9rem; }

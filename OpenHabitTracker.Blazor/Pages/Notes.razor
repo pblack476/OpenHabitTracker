@@ -113,9 +113,23 @@
                                 }
 
                                 <button id="note-item-@note.Id" class="input-group-text bg-transparent flex-grow-1 text-wrap highlightable d-flex align-items-center" title="@note.Title" @onclick="() => OpenSelected(note.Id)" data-notes-step-2><span class="title-clamp">@((MarkupString)SearchFilterService.MarkSearchResults(note.Title))</span></button>
-                                <ContentActions OnEdit="() => OpenSelected(note.Id)" OnCopy="() => CopyExisting(note)" OnDuplicate="() => DuplicateExisting(note)" />
+                                <ContentActions OnEdit="() => BeginQuick(note)" OnCopy="() => CopyExisting(note)" OnDuplicate="() => DuplicateExisting(note)" />
                             </div>
 
+                            @if (_quickNoteId == note.Id)
+                            {
+                                <div class="app-inline-editor">
+                                    <input class="form-control" aria-label="@Loc["Note title"]" @bind="_quickTitle" @bind:event="oninput" />
+                                    <InputSelect class="form-select" aria-label="@Loc["Priority"]" @bind-Value="_quickPriority">
+                                        @foreach (Priority p in Enum.GetValues<Priority>())
+                                        {
+                                            <option value="@p">@Loc[PriorityService.GetPriorityName(p)]</option>
+                                        }
+                                    </InputSelect>
+                                    <button class="btn btn-primary btn-sm" disabled="@string.IsNullOrWhiteSpace(_quickTitle)" @onclick="() => SaveQuick(note)">@Loc["Save"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _quickNoteId = null">@Loc["Close"]</button>
+                                </div>
+                            }
                             @if (ClientState.Settings.DisplayNoteContentAsMarkdown)
                             {
                                 <div class="form-control bg-transparent markdown-block-margin" style="min-height: 38px;" data-notes-step-3>@((MarkupString)SearchFilterService.MarkSearchResultsInHtml(note.ContentMarkdown))</div>
@@ -306,6 +320,27 @@
         _pageStateChanged = !_pageStateChanged;
     }
 
+
+    long? _quickNoteId;
+    string _quickTitle = string.Empty;
+    Priority _quickPriority;
+
+    void BeginQuick(NoteModel note)
+    {
+        _quickNoteId = note.Id;
+        _quickTitle = note.Title;
+        _quickPriority = note.Priority;
+    }
+
+    async Task SaveQuick(NoteModel note)
+    {
+        if (string.IsNullOrWhiteSpace(_quickTitle))
+            return;
+
+        await NoteService.QuickUpdate(note, _quickTitle, _quickPriority);
+        _quickNoteId = null;
+        _pageStateChanged = !_pageStateChanged;
+    }
 
     void CopyExisting(NoteModel note)
     {
